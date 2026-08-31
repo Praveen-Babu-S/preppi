@@ -1,0 +1,76 @@
+syntax = "proto3";
+
+package auth.v1;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "preppi.com/proto/auth/v1;v1";
+
+enum Role {
+  ROLE_UNSPECIFIED = 0;
+  ROLE_STUDENT = 1;
+  ROLE_MENTOR = 2;
+  ROLE_ADMIN = 3;
+}
+
+service AuthService {
+  rpc Register(RegisterRequest) returns (RegisterResponse);
+  rpc Login(LoginRequest) returns (LoginResponse);
+  rpc RefreshToken(RefreshTokenRequest) returns (RefreshTokenResponse);
+  rpc Logout(LogoutRequest) returns (LogoutResponse);
+  rpc VerifyEmail(VerifyEmailRequest) returns (VerifyEmailResponse);
+}
+
+message RegisterRequest {
+  string name = 1;
+  string email = 2;
+  string password = 3;
+  Role role = 4;
+  string subject = 5;
+}
+
+message RegisterResponse {
+  string user_id = 1;
+  string email = 2;
+}
+
+message LoginRequest {
+  string email = 1;
+  string password = 2;
+}
+
+message LoginResponse {
+  string access_token = 1;
+  string refresh_token = 2;
+  string user_id = 3;
+  Role role = 4;
+  google.protobuf.Timestamp access_expires_at = 5;
+  google.protobuf.Timestamp refresh_expires_at = 6;
+}
+
+message RefreshTokenRequest {
+  string refresh_token = 1;
+}
+
+message RefreshTokenResponse {
+  string access_token = 1;
+  string refresh_token = 2;
+  google.protobuf.Timestamp access_expires_at = 3;
+}
+
+message LogoutRequest {
+  string refresh_token = 1;
+}
+
+message LogoutResponse {
+  bool success = 1;
+}
+
+message VerifyEmailRequest {
+  string email = 1;
+  string code = 2;
+}
+
+message VerifyEmailResponse {
+  bool verified = 1;
+}

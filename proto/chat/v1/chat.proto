@@ -1,0 +1,96 @@
+syntax = "proto3";
+
+package chat.v1;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "preppi.com/proto/chat/v1;v1";
+
+enum MessageType {
+  MESSAGE_TYPE_UNSPECIFIED = 0;
+  MESSAGE_TYPE_TEXT = 1;
+  MESSAGE_TYPE_IMAGE = 2;
+  MESSAGE_TYPE_SYSTEM = 3;
+}
+
+service ChatService {
+  rpc CreateRoom(CreateRoomRequest) returns (CreateRoomResponse);
+  rpc GetRoom(GetRoomRequest) returns (GetRoomResponse);
+  rpc GetHistory(GetHistoryRequest) returns (GetHistoryResponse);
+  rpc SendMessage(stream SendMessageRequest) returns (stream SendMessageResponse);
+  rpc StreamMessages(StreamMessagesRequest) returns (stream StreamMessagesResponse);
+  rpc MarkRead(MarkReadRequest) returns (MarkReadResponse);
+}
+
+message CreateRoomRequest {
+  string question_id = 1;
+  string student_id = 2;
+  string mentor_id = 3;
+}
+
+message CreateRoomResponse {
+  string room_id = 1;
+  string status = 2;
+}
+
+message GetRoomRequest {
+  string room_id = 1;
+}
+
+message GetRoomResponse {
+  string room_id = 1;
+  string question_id = 2;
+  string student_id = 3;
+  string mentor_id = 4;
+  string status = 5;
+  google.protobuf.Timestamp created_at = 6;
+}
+
+message GetHistoryRequest {
+  string room_id = 1;
+  string page_token = 2;
+  int32 page_size = 3;
+}
+
+message GetHistoryResponse {
+  repeated StreamMessagesResponse messages = 1;
+  string next_page_token = 2;
+}
+
+message SendMessageRequest {
+  string room_id = 1;
+  string sender_id = 2;
+  string content = 3;
+  MessageType type = 4;
+  string image_url = 5;
+}
+
+message SendMessageResponse {
+  string message_id = 1;
+  google.protobuf.Timestamp sent_at = 2;
+}
+
+message StreamMessagesRequest {
+  string room_id = 1;
+  string user_id = 2;
+}
+
+message StreamMessagesResponse {
+  string id = 1;
+  string room_id = 2;
+  string sender_id = 3;
+  string content = 4;
+  MessageType type = 5;
+  string image_url = 6;
+  bool read = 7;
+  google.protobuf.Timestamp created_at = 8;
+}
+
+message MarkReadRequest {
+  string room_id = 1;
+  string user_id = 2;
+}
+
+message MarkReadResponse {
+  int32 unread_count = 1;
+}

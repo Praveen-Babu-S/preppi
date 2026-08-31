@@ -1,0 +1,103 @@
+syntax = "proto3";
+
+package admin.v1;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "preppi.com/proto/admin/v1;v1";
+
+enum ReportStatus {
+  REPORT_STATUS_UNSPECIFIED = 0;
+  REPORT_STATUS_PENDING = 1;
+  REPORT_STATUS_REVIEWED = 2;
+  REPORT_STATUS_ACTIONED = 3;
+}
+
+enum ReportType {
+  REPORT_TYPE_UNSPECIFIED = 0;
+  REPORT_TYPE_ABUSE = 1;
+  REPORT_TYPE_SPAM = 2;
+  REPORT_TYPE_INAPPROPRIATE_CONTENT = 3;
+  REPORT_TYPE_OTHER = 4;
+}
+
+service AdminService {
+  rpc CreateReport(CreateReportRequest) returns (CreateReportResponse);
+  rpc ListReports(ListReportsRequest) returns (ListReportsResponse);
+  rpc ReviewReport(ReviewReportRequest) returns (ReviewReportResponse);
+  rpc GetPendingMentors(GetPendingMentorsRequest) returns (GetPendingMentorsResponse);
+  rpc GetDashboard(GetDashboardRequest) returns (GetDashboardResponse);
+}
+
+message CreateReportRequest {
+  string reporter_id = 1;
+  ReportType type = 2;
+  string content_id = 3;
+  string reason = 4;
+}
+
+message CreateReportResponse {
+  string report_id = 1;
+  ReportStatus status = 2;
+}
+
+message ListReportsRequest {
+  ReportStatus status = 1;
+  string page_token = 2;
+  int32 page_size = 3;
+}
+
+message ListReportsResponse {
+  repeated Report reports = 1;
+  string next_page_token = 2;
+}
+
+message ReviewReportRequest {
+  string report_id = 1;
+  bool action_taken = 2;
+  string action = 3;
+}
+
+message ReviewReportResponse {
+  ReportStatus status = 1;
+}
+
+message GetPendingMentorsRequest {
+  string page_token = 1;
+  int32 page_size = 2;
+}
+
+message GetPendingMentorsResponse {
+  repeated PendingMentor mentors = 1;
+  string next_page_token = 2;
+}
+
+message GetDashboardRequest {}
+
+message GetDashboardResponse {
+  int32 total_users = 1;
+  int32 active_mentors = 2;
+  int32 active_students = 3;
+  int32 pending_questions = 4;
+  int32 pending_reports = 5;
+  int32 pending_mentor_approvals = 6;
+}
+
+message Report {
+  string id = 1;
+  string reporter_id = 2;
+  ReportType type = 3;
+  string content_id = 4;
+  string reason = 5;
+  ReportStatus status = 6;
+  google.protobuf.Timestamp created_at = 7;
+}
+
+message PendingMentor {
+  string user_id = 1;
+  string name = 2;
+  string email = 3;
+  repeated string expertise = 4;
+  string bio = 5;
+  google.protobuf.Timestamp registered_at = 6;
+}

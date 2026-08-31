@@ -1,0 +1,40 @@
+# Default config for local development. All values can be overridden by env vars
+# prefixed with the service name, e.g. GRPC_PORT or AUTH_DATABASE_HOST.
+log:
+  level: info
+
+grpc:
+  port: 50051
+
+http:
+  port: 8080
+
+database:
+  host: localhost
+  port: 5432
+  user: postgres
+  password: postgres
+  name: doubt_resolver
+  sslmode: disable
+
+redis:
+  host: localhost
+  port: 6379
+  password: ""
+  db: 0
+
+nats:
+  url: nats://localhost:4222
+
+storage:
+  endpoint: localhost:9000
+  access_key: minioadmin
+  secret_key: minioadmin
+  bucket: doubt-resolver
+  use_ssl: false
+
+jwt:
+  public_key: ""
+  private_key: ""
+  access_ttl: 15
+  refresh_ttl: 24

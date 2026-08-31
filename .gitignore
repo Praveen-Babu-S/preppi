@@ -1,0 +1,19 @@
+# --- Secrets ---
+*.env
+!.env.example
+
+# --- Go build artifacts ---
+*.exe
+*.test
+*.out
+bin/
+dist/
+
+# --- Editor / OS ---
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# --- Proto generated (regenerated via make proto-gen) ---
+# proto/gen/

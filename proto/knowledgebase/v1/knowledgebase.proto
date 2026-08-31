@@ -1,0 +1,69 @@
+syntax = "proto3";
+
+package knowledgebase.v1;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "preppi.com/proto/knowledgebase/v1;v1";
+
+service KnowledgeBaseService {
+  rpc SearchKB(SearchKBRequest) returns (SearchKBResponse);
+  rpc GetArticle(GetArticleRequest) returns (GetArticleResponse);
+  rpc GetRelatedTopics(GetRelatedTopicsRequest) returns (GetRelatedTopicsResponse);
+  rpc SuggestKeywords(SuggestKeywordsRequest) returns (SuggestKeywordsResponse);
+}
+
+message SearchKBRequest {
+  string query = 1;
+  string subject = 2;
+  string page_token = 3;
+  int32 page_size = 4;
+}
+
+message SearchKBResponse {
+  repeated Article articles = 1;
+  string next_page_token = 2;
+}
+
+message GetArticleRequest {
+  string article_id = 1;
+}
+
+message GetArticleResponse {
+  Article article = 1;
+  string full_text = 2;
+}
+
+message GetRelatedTopicsRequest {
+  string topic = 1;
+  string subject = 2;
+}
+
+message GetRelatedTopicsResponse {
+  repeated Topic topics = 1;
+}
+
+message SuggestKeywordsRequest {
+  string query = 1;
+}
+
+message SuggestKeywordsResponse {
+  repeated string keywords = 1;
+}
+
+message Article {
+  string id = 1;
+  string subject = 2;
+  string topic = 3;
+  string title = 4;
+  string summary = 5;
+  int32 upvotes = 6;
+  google.protobuf.Timestamp created_at = 7;
+}
+
+message Topic {
+  string id = 1;
+  string name = 2;
+  string subject = 3;
+  int32 article_count = 4;
+}

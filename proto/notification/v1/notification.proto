@@ -1,0 +1,102 @@
+syntax = "proto3";
+
+package notification.v1;
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/struct.proto";
+
+option go_package = "preppi.com/proto/notification/v1;v1";
+
+enum Channel {
+  CHANNEL_UNSPECIFIED = 0;
+  CHANNEL_IN_APP = 1;
+  CHANNEL_PUSH = 2;
+  CHANNEL_EMAIL = 3;
+  CHANNEL_SMS = 4;
+}
+
+enum NotificationType {
+  NOTIFICATION_TYPE_UNSPECIFIED = 0;
+  NOTIFICATION_TYPE_QUESTION_ASSIGNED = 1;
+  NOTIFICATION_TYPE_SOLUTION_POSTED = 2;
+  NOTIFICATION_TYPE_QUESTION_ESCALATED = 3;
+  NOTIFICATION_TYPE_COMMENT_POSTED = 4;
+  NOTIFICATION_TYPE_FOLLOW_UP = 5;
+  NOTIFICATION_TYPE_SYSTEM = 6;
+}
+
+service NotificationService {
+  rpc SendNotification(SendNotificationRequest) returns (SendNotificationResponse);
+  rpc ListNotifications(ListNotificationsRequest) returns (ListNotificationsResponse);
+  rpc MarkRead(MarkReadRequest) returns (MarkReadResponse);
+  rpc GetPreferences(GetPreferencesRequest) returns (GetPreferencesResponse);
+  rpc UpdatePreferences(UpdatePreferencesRequest) returns (UpdatePreferencesResponse);
+}
+
+message SendNotificationRequest {
+  string user_id = 1;
+  NotificationType type = 2;
+  string title = 3;
+  string body = 4;
+  google.protobuf.Struct data = 5;
+  repeated Channel channels = 6;
+}
+
+message SendNotificationResponse {
+  string notification_id = 1;
+}
+
+message ListNotificationsRequest {
+  string user_id = 1;
+  string page_token = 2;
+  int32 page_size = 3;
+}
+
+message ListNotificationsResponse {
+  repeated Notification notifications = 1;
+  string next_page_token = 2;
+}
+
+message MarkReadRequest {
+  string user_id = 1;
+  string notification_id = 2;
+}
+
+message MarkReadResponse {
+  bool success = 1;
+}
+
+message GetPreferencesRequest {
+  string user_id = 1;
+}
+
+message GetPreferencesResponse {
+  NotificationPreferences preferences = 1;
+}
+
+message UpdatePreferencesRequest {
+  string user_id = 1;
+  NotificationPreferences preferences = 2;
+}
+
+message UpdatePreferencesResponse {
+  NotificationPreferences preferences = 1;
+}
+
+message Notification {
+  string id = 1;
+  string user_id = 2;
+  NotificationType type = 3;
+  string title = 4;
+  string body = 5;
+  bool read = 6;
+  google.protobuf.Timestamp created_at = 7;
+}
+
+message NotificationPreferences {
+  bool in_app_enabled = 1;
+  bool push_enabled = 2;
+  bool email_enabled = 3;
+  bool sms_enabled = 4;
+  bool digest_mode = 5;
+}

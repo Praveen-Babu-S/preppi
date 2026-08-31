@@ -1,0 +1,141 @@
+syntax = "proto3";
+
+package user.v1;
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/field_mask.proto";
+
+option go_package = "preppi.com/proto/user/v1;v1";
+
+enum VerificationStatus {
+  VERIFICATION_STATUS_UNSPECIFIED = 0;
+  VERIFICATION_STATUS_PENDING = 1;
+  VERIFICATION_STATUS_APPROVED = 2;
+  VERIFICATION_STATUS_REJECTED = 3;
+}
+
+enum OnlineStatus {
+  ONLINE_STATUS_UNSPECIFIED = 0;
+  ONLINE_STATUS_ONLINE = 1;
+  ONLINE_STATUS_OFFLINE = 2;
+}
+
+service UserService {
+  rpc CreateProfile(CreateProfileRequest) returns (CreateProfileResponse);
+  rpc GetProfile(GetProfileRequest) returns (GetProfileResponse);
+  rpc UpdateProfile(UpdateProfileRequest) returns (UpdateProfileResponse);
+  rpc UpdateMentorProfile(UpdateMentorProfileRequest) returns (UpdateMentorProfileResponse);
+  rpc GetMentorsBySubject(GetMentorsBySubjectRequest) returns (GetMentorsBySubjectResponse);
+  rpc SetOnlineStatus(SetOnlineStatusRequest) returns (SetOnlineStatusResponse);
+  rpc ApproveMentor(ApproveMentorRequest) returns (ApproveMentorResponse);
+}
+
+message CreateProfileRequest {
+  string user_id = 1;
+  string name = 2;
+  string avatar_url = 3;
+  string phone = 4;
+  string school = 5;
+  string college = 6;
+  string bio = 7;
+  Role role = 8;
+  repeated string expertise_subjects = 9;
+  repeated string sub_topics = 10;
+}
+
+message CreateProfileResponse {
+  Profile profile = 1;
+}
+
+message GetProfileRequest {
+  string user_id = 1;
+}
+
+message GetProfileResponse {
+  Profile profile = 1;
+}
+
+message UpdateProfileRequest {
+  string user_id = 1;
+  google.protobuf.FieldMask update_mask = 2;
+  string name = 3;
+  string avatar_url = 4;
+  string bio = 5;
+  string school = 6;
+  string college = 7;
+}
+
+message UpdateProfileResponse {
+  Profile profile = 1;
+}
+
+message UpdateMentorProfileRequest {
+  string user_id = 1;
+  repeated string expertise_subjects = 2;
+  repeated string sub_topics = 3;
+  string bio = 4;
+}
+
+message UpdateMentorProfileResponse {
+  MentorProfile mentor = 1;
+}
+
+message GetMentorsBySubjectRequest {
+  string subject = 1;
+  int32 page_size = 2;
+  string page_token = 3;
+}
+
+message GetMentorsBySubjectResponse {
+  repeated MentorProfile mentors = 1;
+  string next_page_token = 2;
+}
+
+message SetOnlineStatusRequest {
+  string user_id = 1;
+  OnlineStatus status = 2;
+}
+
+message SetOnlineStatusResponse {
+  bool success = 1;
+}
+
+message ApproveMentorRequest {
+  string user_id = 1;
+  bool approved = 2;
+}
+
+message ApproveMentorResponse {
+  VerificationStatus status = 1;
+}
+
+enum Role {
+  ROLE_UNSPECIFIED = 0;
+  ROLE_STUDENT = 1;
+  ROLE_MENTOR = 2;
+  ROLE_ADMIN = 3;
+}
+
+message Profile {
+  string user_id = 1;
+  string name = 2;
+  string avatar_url = 3;
+  string phone = 4;
+  string school = 5;
+  string college = 6;
+  string bio = 7;
+  Role role = 8;
+  OnlineStatus online_status = 9;
+  google.protobuf.Timestamp created_at = 10;
+}
+
+message MentorProfile {
+  string user_id = 1;
+  string name = 2;
+  string avatar_url = 3;
+  repeated string expertise_subjects = 4;
+  repeated string sub_topics = 5;
+  VerificationStatus verification_status = 6;
+  double rating = 7;
+  int32 questions_answered = 8;
+}

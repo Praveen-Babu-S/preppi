@@ -1,0 +1,73 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "instructions": ["AGENTS.md"],
+  "lsp": {
+    "gopls": {
+      "command": ["gopls"],
+      "extensions": [".go"],
+      "env": {
+        "GOFLAGS": "-mod=mod"
+      }
+    },
+    "protobuf": {
+      "command": ["buf", "lsp"],
+      "extensions": [".proto"]
+    }
+  },
+  "mcp": {
+    "context7": {
+      "type": "remote",
+      "url": "https://mcp.context7.com/mcp",
+      "enabled": true
+    },
+    "github": {
+      "type": "remote",
+      "url": "https://api.github.com/mcp",
+      "enabled": true,
+      "headers": {
+        "Authorization": "Bearer {env:GITHUB_TOKEN}"
+      }
+    },
+    "sequential-thinking": {
+      "type": "local",
+      "command": ["npx", "-y", "@modelcontextprotocol/server-sequential-thinking"],
+      "enabled": true
+    }
+  },
+  "references": {
+    "grpc-go": {
+      "repository": "grpc/grpc-go",
+      "description": "gRPC Go implementation reference for all service-to-service communication"
+    },
+    "gin": {
+      "repository": "gin-gonic/gin",
+      "description": "Gin HTTP framework reference used for the API gateway"
+    },
+    "gorm": {
+      "repository": "go-gorm/gorm",
+      "description": "GORM ORM library reference for repository layer database access"
+    }
+  },
+  "permission": {
+    "bash": {
+      "go *": "allow",
+      "make *": "allow",
+      "protoc *": "allow",
+      "buf *": "allow",
+      "docker *": "allow",
+      "docker-compose *": "allow",
+      "kubectl *": "ask",
+      "rm -rf *": "deny",
+      "*": "ask"
+    },
+    "edit": "allow",
+    "external_directory": {
+      "~/**": "ask",
+      "/etc/**": "deny"
+    }
+  },
+  "compaction": {
+    "auto": true,
+    "tail_turns": 15
+  }
+}

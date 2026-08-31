@@ -1,0 +1,74 @@
+syntax = "proto3";
+
+package analytics.v1;
+
+option go_package = "preppi.com/proto/analytics/v1;v1";
+
+service AnalyticsService {
+  rpc GetLeaderboard(GetLeaderboardRequest) returns (GetLeaderboardResponse);
+  rpc GetStudentStats(GetStudentStatsRequest) returns (GetStudentStatsResponse);
+  rpc GetMentorStats(GetMentorStatsRequest) returns (GetMentorStatsResponse);
+  rpc GetPlatformMetrics(GetPlatformMetricsRequest) returns (GetPlatformMetricsResponse);
+}
+
+message GetLeaderboardRequest {
+  string period = 1;
+  int32 limit = 2;
+}
+
+message GetLeaderboardResponse {
+  repeated LeaderboardEntry entries = 1;
+}
+
+message GetStudentStatsRequest {
+  string student_id = 1;
+  string period = 2;
+}
+
+message GetStudentStatsResponse {
+  int32 questions_asked = 1;
+  int32 questions_answered = 2;
+  double resolution_rate = 3;
+  repeated TopicWeakness weaknesses = 4;
+}
+
+message GetMentorStatsRequest {
+  string mentor_id = 1;
+  string period = 2;
+}
+
+message GetMentorStatsResponse {
+  int32 questions_answered = 1;
+  int32 accepted_solutions = 2;
+  int32 total_upvotes = 3;
+  int32 skip_rate = 4;
+}
+
+message GetPlatformMetricsRequest {
+  string period = 1;
+}
+
+message GetPlatformMetricsResponse {
+  int32 active_students = 1;
+  int32 active_mentors = 2;
+  int32 total_questions = 3;
+  int32 pending_questions = 4;
+  double avg_response_time_hours = 5;
+  double resolution_rate = 6;
+}
+
+message LeaderboardEntry {
+  string mentor_id = 1;
+  string mentor_name = 2;
+  int32 rank = 3;
+  int32 questions_answered = 4;
+  int32 upvotes = 5;
+  int32 students_helped = 6;
+}
+
+message TopicWeakness {
+  string subject = 1;
+  string topic = 2;
+  int32 question_count = 3;
+  double resolution_rate = 4;
+}

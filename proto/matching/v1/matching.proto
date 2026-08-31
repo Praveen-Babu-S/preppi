@@ -1,0 +1,96 @@
+syntax = "proto3";
+
+package matching.v1;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "preppi.com/proto/matching/v1;v1";
+
+enum AssignmentStatus {
+  ASSIGNMENT_STATUS_UNSPECIFIED = 0;
+  ASSIGNMENT_STATUS_PENDING = 1;
+  ASSIGNMENT_STATUS_SKIPPED = 2;
+  ASSIGNMENT_STATUS_IN_PROGRESS = 3;
+  ASSIGNMENT_STATUS_COMPLETED = 4;
+}
+
+service MatchingService {
+  rpc AssignMentor(AssignMentorRequest) returns (AssignMentorResponse);
+  rpc SkipQuestion(SkipQuestionRequest) returns (SkipQuestionResponse);
+  rpc GetNextQuestion(GetNextQuestionRequest) returns (GetNextQuestionResponse);
+  rpc GetPendingForMentor(GetPendingForMentorRequest) returns (GetPendingForMentorResponse);
+  rpc EscalateQuestion(EscalateQuestionRequest) returns (EscalateQuestionResponse);
+}
+
+message AssignMentorRequest {
+  string question_id = 1;
+  string subject = 2;
+  Urgency urgency = 3;
+  repeated string candidate_mentor_ids = 4;
+}
+
+message AssignMentorResponse {
+  string assignment_id = 1;
+  string mentor_id = 2;
+  AssignmentStatus status = 3;
+}
+
+message SkipQuestionRequest {
+  string assignment_id = 1;
+  string mentor_id = 2;
+  string reason = 3;
+}
+
+message SkipQuestionResponse {
+  bool skipped = 1;
+  bool need_reassignment = 2;
+}
+
+message GetNextQuestionRequest {
+  string mentor_id = 1;
+}
+
+message GetNextQuestionResponse {
+  string question_id = 1;
+  string student_id = 2;
+  string subject = 3;
+  string topic = 4;
+  string description = 5;
+  repeated string image_urls = 6;
+}
+
+message GetPendingForMentorRequest {
+  string mentor_id = 1;
+  string page_token = 2;
+  int32 page_size = 3;
+}
+
+message GetPendingForMentorResponse {
+  repeated PendingQuestion questions = 1;
+  string next_page_token = 2;
+}
+
+message PendingQuestion {
+  string question_id = 1;
+  string subject = 2;
+  string topic = 3;
+  string description = 4;
+  Urgency urgency = 5;
+  google.protobuf.Timestamp created_at = 6;
+}
+
+message EscalateQuestionRequest {
+  string question_id = 1;
+  string reason = 2;
+}
+
+message EscalateQuestionResponse {
+  int32 escalation_level = 1;
+}
+
+enum Urgency {
+  URGENCY_UNSPECIFIED = 0;
+  URGENCY_LOW = 1;
+  URGENCY_NORMAL = 2;
+  URGENCY_URGENT = 3;
+}

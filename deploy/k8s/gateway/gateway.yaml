@@ -1,0 +1,60 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gateway
+  namespace: doubt-resolver
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: gateway
+  template:
+    metadata:
+      labels:
+        app: gateway
+    spec:
+      containers:
+        - name: gateway
+          image: doubt-resolver/gateway:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          env:
+            - name: AUTH_ADDR
+              value: "auth.doubt-resolver.svc.cluster.local:50051"
+            - name: USER_ADDR
+              value: "user.doubt-resolver.svc.cluster.local:50052"
+            - name: QUESTION_ADDR
+              value: "question.doubt-resolver.svc.cluster.local:50053"
+            - name: MATCHING_ADDR
+              value: "matching.doubt-resolver.svc.cluster.local:50054"
+            - name: SOLUTION_ADDR
+              value: "solution.doubt-resolver.svc.cluster.local:50055"
+            - name: CHAT_ADDR
+              value: "chat.doubt-resolver.svc.cluster.local:50056"
+            - name: NOTIFICATION_ADDR
+              value: "notification.doubt-resolver.svc.cluster.local:50057"
+            - name: KNOWLEDGEBASE_ADDR
+              value: "knowledgebase.doubt-resolver.svc.cluster.local:50058"
+            - name: ANALYTICS_ADDR
+              value: "analytics.doubt-resolver.svc.cluster.local:50059"
+            - name: ADMIN_ADDR
+              value: "admin.doubt-resolver.svc.cluster.local:50060"
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 5
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: gateway
+  namespace: doubt-resolver
+spec:
+  selector:
+    app: gateway
+  ports:
+    - port: 80
+      targetPort: 8080
+  type: ClusterIP
