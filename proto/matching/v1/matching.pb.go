@@ -130,12 +130,13 @@ func (Urgency) EnumDescriptor() ([]byte, []int) {
 }
 
 type AssignMentorRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	QuestionId    string                 `protobuf:"bytes,1,opt,name=question_id,json=questionId,proto3" json:"question_id,omitempty"`
-	Subject       string                 `protobuf:"bytes,2,opt,name=subject,proto3" json:"subject,omitempty"`
-	Urgency       Urgency                `protobuf:"varint,3,opt,name=urgency,proto3,enum=matching.v1.Urgency" json:"urgency,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state              protoimpl.MessageState `protogen:"open.v1"`
+	QuestionId         string                 `protobuf:"bytes,1,opt,name=question_id,json=questionId,proto3" json:"question_id,omitempty"`
+	Subject            string                 `protobuf:"bytes,2,opt,name=subject,proto3" json:"subject,omitempty"`
+	Urgency            Urgency                `protobuf:"varint,3,opt,name=urgency,proto3,enum=matching.v1.Urgency" json:"urgency,omitempty"`
+	CandidateMentorIds []string               `protobuf:"bytes,4,rep,name=candidate_mentor_ids,json=candidateMentorIds,proto3" json:"candidate_mentor_ids,omitempty"`
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
 }
 
 func (x *AssignMentorRequest) Reset() {
@@ -187,6 +188,13 @@ func (x *AssignMentorRequest) GetUrgency() Urgency {
 		return x.Urgency
 	}
 	return Urgency_URGENCY_UNSPECIFIED
+}
+
+func (x *AssignMentorRequest) GetCandidateMentorIds() []string {
+	if x != nil {
+		return x.CandidateMentorIds
+	}
+	return nil
 }
 
 type AssignMentorResponse struct {
@@ -785,12 +793,13 @@ var File_matching_v1_matching_proto protoreflect.FileDescriptor
 
 const file_matching_v1_matching_proto_rawDesc = "" +
 	"\n" +
-	"\x1amatching/v1/matching.proto\x12\vmatching.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"\x80\x01\n" +
+	"\x1amatching/v1/matching.proto\x12\vmatching.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"\xb2\x01\n" +
 	"\x13AssignMentorRequest\x12\x1f\n" +
 	"\vquestion_id\x18\x01 \x01(\tR\n" +
 	"questionId\x12\x18\n" +
 	"\asubject\x18\x02 \x01(\tR\asubject\x12.\n" +
-	"\aurgency\x18\x03 \x01(\x0e2\x14.matching.v1.UrgencyR\aurgency\"\x8f\x01\n" +
+	"\aurgency\x18\x03 \x01(\x0e2\x14.matching.v1.UrgencyR\aurgency\x120\n" +
+	"\x14candidate_mentor_ids\x18\x04 \x03(\tR\x12candidateMentorIds\"\x8f\x01\n" +
 	"\x14AssignMentorResponse\x12#\n" +
 	"\rassignment_id\x18\x01 \x01(\tR\fassignmentId\x12\x1b\n" +
 	"\tmentor_id\x18\x02 \x01(\tR\bmentorId\x125\n" +

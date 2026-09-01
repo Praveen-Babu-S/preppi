@@ -24,16 +24,10 @@ spec:
               value: "auth.preppi.svc.cluster.local:50051"
             - name: USER_ADDR
               value: "user.preppi.svc.cluster.local:50052"
-            - name: QUESTION_ADDR
-              value: "question.preppi.svc.cluster.local:50053"
+            - name: DOUBT_ADDR
+              value: "doubt.preppi.svc.cluster.local:50053"
             - name: MATCHING_ADDR
               value: "matching.preppi.svc.cluster.local:50054"
-            - name: SOLUTION_ADDR
-              value: "solution.preppi.svc.cluster.local:50055"
-            - name: CHAT_ADDR
-              value: "chat.preppi.svc.cluster.local:50056"
-            - name: NOTIFICATION_ADDR
-              value: "notification.preppi.svc.cluster.local:50057"
             - name: KNOWLEDGEBASE_ADDR
               value: "knowledgebase.preppi.svc.cluster.local:50058"
             - name: ANALYTICS_ADDR

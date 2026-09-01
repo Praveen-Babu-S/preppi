@@ -4,11 +4,8 @@ package clients
 type Addrs struct {
 	Auth          string
 	User          string
-	Question      string
+	Doubt         string
 	Matching      string
-	Solution      string
-	Chat          string
-	Notification  string
 	Knowledgebase string
 	Analytics     string
 	Admin         string

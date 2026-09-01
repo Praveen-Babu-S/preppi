@@ -1,0 +1,447 @@
+syntax = "proto3";
+
+package doubt.v1;
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/field_mask.proto";
+import "google/protobuf/struct.proto";
+
+option go_package = "preppi.com/proto/doubt/v1;v1";
+
+// ──────────────────────────────────────────────
+// Enums
+// ──────────────────────────────────────────────
+
+enum QuestionStatus {
+  QUESTION_STATUS_UNSPECIFIED = 0;
+  QUESTION_STATUS_OPEN = 1;
+  QUESTION_STATUS_ASSIGNED = 2;
+  QUESTION_STATUS_IN_PROGRESS = 3;
+  QUESTION_STATUS_ANSWERED = 4;
+  QUESTION_STATUS_ESCALATED = 5;
+}
+
+enum Urgency {
+  URGENCY_UNSPECIFIED = 0;
+  URGENCY_LOW = 1;
+  URGENCY_NORMAL = 2;
+  URGENCY_URGENT = 3;
+}
+
+enum VoteType {
+  VOTE_TYPE_UNSPECIFIED = 0;
+  VOTE_TYPE_UP = 1;
+  VOTE_TYPE_DOWN = 2;
+}
+
+enum MessageType {
+  MESSAGE_TYPE_UNSPECIFIED = 0;
+  MESSAGE_TYPE_TEXT = 1;
+  MESSAGE_TYPE_IMAGE = 2;
+  MESSAGE_TYPE_SYSTEM = 3;
+}
+
+enum Channel {
+  CHANNEL_UNSPECIFIED = 0;
+  CHANNEL_IN_APP = 1;
+  CHANNEL_PUSH = 2;
+  CHANNEL_EMAIL = 3;
+  CHANNEL_SMS = 4;
+}
+
+enum NotificationType {
+  NOTIFICATION_TYPE_UNSPECIFIED = 0;
+  NOTIFICATION_TYPE_QUESTION_ASSIGNED = 1;
+  NOTIFICATION_TYPE_SOLUTION_POSTED = 2;
+  NOTIFICATION_TYPE_QUESTION_ESCALATED = 3;
+  NOTIFICATION_TYPE_COMMENT_POSTED = 4;
+  NOTIFICATION_TYPE_FOLLOW_UP = 5;
+  NOTIFICATION_TYPE_SYSTEM = 6;
+}
+
+// ──────────────────────────────────────────────
+// Question service
+// ──────────────────────────────────────────────
+
+service QuestionService {
+  rpc CreateQuestion(CreateQuestionRequest) returns (CreateQuestionResponse);
+  rpc GetQuestionById(GetQuestionByIdRequest) returns (GetQuestionByIdResponse);
+  rpc ListQuestionsByStudent(ListQuestionsByStudentRequest) returns (ListQuestionsByStudentResponse);
+  rpc UpdateQuestionStatus(UpdateQuestionStatusRequest) returns (UpdateQuestionStatusResponse);
+  rpc SearchQuestions(SearchQuestionsRequest) returns (SearchQuestionsResponse);
+  rpc UpdateQuestion(UpdateQuestionRequest) returns (UpdateQuestionResponse);
+}
+
+message CreateQuestionRequest {
+  string student_id = 1;
+  string subject = 2;
+  string topic = 3;
+  string description = 4;
+  repeated string image_urls = 5;
+  Urgency urgency = 6;
+}
+
+message CreateQuestionResponse {
+  string question_id = 1;
+  QuestionStatus status = 2;
+  google.protobuf.Timestamp created_at = 3;
+}
+
+message GetQuestionByIdRequest {
+  string question_id = 1;
+}
+
+message GetQuestionByIdResponse {
+  Question question = 1;
+  SolutionSummary solution = 2;
+  repeated CommentSummary comments = 3;
+}
+
+message ListQuestionsByStudentRequest {
+  string student_id = 1;
+  string page_token = 2;
+  int32 page_size = 3;
+}
+
+message ListQuestionsByStudentResponse {
+  repeated Question questions = 1;
+  string next_page_token = 2;
+}
+
+message UpdateQuestionStatusRequest {
+  string question_id = 1;
+  QuestionStatus status = 2;
+}
+
+message UpdateQuestionStatusResponse {
+  Question question = 1;
+}
+
+message SearchQuestionsRequest {
+  string query = 1;
+  string subject = 2;
+  string page_token = 3;
+  int32 page_size = 4;
+}
+
+message SearchQuestionsResponse {
+  repeated Question questions = 1;
+  string next_page_token = 2;
+}
+
+message UpdateQuestionRequest {
+  string question_id = 1;
+  google.protobuf.FieldMask update_mask = 2;
+  string subject = 3;
+  string topic = 4;
+  string description = 5;
+  Urgency urgency = 6;
+}
+
+message UpdateQuestionResponse {
+  Question question = 1;
+}
+
+message Question {
+  string id = 1;
+  string student_id = 2;
+  string assignee_id = 3;
+  string subject = 4;
+  string topic = 5;
+  string description = 6;
+  repeated string image_urls = 7;
+  Urgency urgency = 8;
+  QuestionStatus status = 9;
+  google.protobuf.Timestamp created_at = 10;
+  google.protobuf.Timestamp updated_at = 11;
+}
+
+message SolutionSummary {
+  string id = 1;
+  string mentor_id = 2;
+  string description = 3;
+  int32 upvotes = 4;
+  bool is_accepted = 5;
+  google.protobuf.Timestamp created_at = 6;
+}
+
+message CommentSummary {
+  string id = 1;
+  string user_id = 2;
+  string message = 3;
+  google.protobuf.Timestamp created_at = 4;
+}
+
+// ──────────────────────────────────────────────
+// Solution service
+// ──────────────────────────────────────────────
+
+service SolutionService {
+  rpc CreateSolution(CreateSolutionRequest) returns (CreateSolutionResponse);
+  rpc GetSolutionById(GetSolutionByIdRequest) returns (GetSolutionByIdResponse);
+  rpc ListSolutionsByQuestion(ListSolutionsByQuestionRequest) returns (ListSolutionsByQuestionResponse);
+  rpc VoteSolution(VoteSolutionRequest) returns (VoteSolutionResponse);
+  rpc AcceptSolution(AcceptSolutionRequest) returns (AcceptSolutionResponse);
+  rpc CreateFollowUp(CreateFollowUpRequest) returns (CreateFollowUpResponse);
+  rpc ListFollowUps(ListFollowUpsRequest) returns (ListFollowUpsResponse);
+}
+
+message CreateSolutionRequest {
+  string question_id = 1;
+  string mentor_id = 2;
+  string description = 3;
+  repeated string image_urls = 4;
+}
+
+message CreateSolutionResponse {
+  Solution solution = 1;
+}
+
+message GetSolutionByIdRequest {
+  string solution_id = 1;
+}
+
+message GetSolutionByIdResponse {
+  Solution solution = 1;
+}
+
+message ListSolutionsByQuestionRequest {
+  string question_id = 1;
+  string page_token = 2;
+  int32 page_size = 3;
+}
+
+message ListSolutionsByQuestionResponse {
+  repeated Solution solutions = 1;
+  string next_page_token = 2;
+}
+
+message VoteSolutionRequest {
+  string solution_id = 1;
+  string user_id = 2;
+  VoteType vote = 3;
+}
+
+message VoteSolutionResponse {
+  int32 upvotes = 1;
+  int32 downvotes = 2;
+}
+
+message AcceptSolutionRequest {
+  string solution_id = 1;
+  string student_id = 2;
+}
+
+message AcceptSolutionResponse {
+  bool accepted = 1;
+}
+
+message CreateFollowUpRequest {
+  string solution_id = 1;
+  string user_id = 2;
+  string message = 3;
+  repeated string image_urls = 4;
+}
+
+message CreateFollowUpResponse {
+  FollowUp follow_up = 1;
+}
+
+message ListFollowUpsRequest {
+  string solution_id = 1;
+  string page_token = 2;
+  int32 page_size = 3;
+}
+
+message ListFollowUpsResponse {
+  repeated FollowUp follow_ups = 1;
+  string next_page_token = 2;
+}
+
+message Solution {
+  string id = 1;
+  string question_id = 2;
+  string mentor_id = 3;
+  string description = 4;
+  repeated string image_urls = 5;
+  int32 upvotes = 6;
+  int32 downvotes = 7;
+  bool is_accepted = 8;
+  google.protobuf.Timestamp created_at = 9;
+  google.protobuf.Timestamp updated_at = 10;
+}
+
+message FollowUp {
+  string id = 1;
+  string solution_id = 2;
+  string user_id = 3;
+  string message = 4;
+  repeated string image_urls = 5;
+  google.protobuf.Timestamp created_at = 6;
+}
+
+// ──────────────────────────────────────────────
+// Chat service
+// ──────────────────────────────────────────────
+
+service ChatService {
+  rpc CreateRoom(CreateRoomRequest) returns (CreateRoomResponse);
+  rpc GetRoom(GetRoomRequest) returns (GetRoomResponse);
+  rpc GetHistory(GetHistoryRequest) returns (GetHistoryResponse);
+  rpc SendMessage(stream SendMessageRequest) returns (stream SendMessageResponse);
+  rpc StreamMessages(StreamMessagesRequest) returns (stream StreamMessagesResponse);
+  rpc ChatMarkRead(ChatMarkReadRequest) returns (ChatMarkReadResponse);
+}
+
+message CreateRoomRequest {
+  string question_id = 1;
+  string student_id = 2;
+  string mentor_id = 3;
+}
+
+message CreateRoomResponse {
+  string room_id = 1;
+  string status = 2;
+}
+
+message GetRoomRequest {
+  string room_id = 1;
+}
+
+message GetRoomResponse {
+  string room_id = 1;
+  string question_id = 2;
+  string student_id = 3;
+  string mentor_id = 4;
+  string status = 5;
+  google.protobuf.Timestamp created_at = 6;
+}
+
+message GetHistoryRequest {
+  string room_id = 1;
+  string page_token = 2;
+  int32 page_size = 3;
+}
+
+message GetHistoryResponse {
+  repeated StreamMessagesResponse messages = 1;
+  string next_page_token = 2;
+}
+
+message SendMessageRequest {
+  string room_id = 1;
+  string sender_id = 2;
+  string content = 3;
+  MessageType type = 4;
+  string image_url = 5;
+}
+
+message SendMessageResponse {
+  string message_id = 1;
+  google.protobuf.Timestamp sent_at = 2;
+}
+
+message StreamMessagesRequest {
+  string room_id = 1;
+  string user_id = 2;
+}
+
+message StreamMessagesResponse {
+  string id = 1;
+  string room_id = 2;
+  string sender_id = 3;
+  string content = 4;
+  MessageType type = 5;
+  string image_url = 6;
+  bool read = 7;
+  google.protobuf.Timestamp created_at = 8;
+}
+
+message ChatMarkReadRequest {
+  string room_id = 1;
+  string user_id = 2;
+}
+
+message ChatMarkReadResponse {
+  int32 unread_count = 1;
+}
+
+// ──────────────────────────────────────────────
+// Notification service
+// ──────────────────────────────────────────────
+
+service NotificationService {
+  rpc SendNotification(SendNotificationRequest) returns (SendNotificationResponse);
+  rpc ListNotifications(ListNotificationsRequest) returns (ListNotificationsResponse);
+  rpc NotificationMarkRead(NotificationMarkReadRequest) returns (NotificationMarkReadResponse);
+  rpc GetPreferences(GetPreferencesRequest) returns (GetPreferencesResponse);
+  rpc UpdatePreferences(UpdatePreferencesRequest) returns (UpdatePreferencesResponse);
+}
+
+message SendNotificationRequest {
+  string user_id = 1;
+  NotificationType type = 2;
+  string title = 3;
+  string body = 4;
+  google.protobuf.Struct data = 5;
+  repeated Channel channels = 6;
+}
+
+message SendNotificationResponse {
+  string notification_id = 1;
+}
+
+message ListNotificationsRequest {
+  string user_id = 1;
+  string page_token = 2;
+  int32 page_size = 3;
+}
+
+message ListNotificationsResponse {
+  repeated Notification notifications = 1;
+  string next_page_token = 2;
+}
+
+message NotificationMarkReadRequest {
+  string user_id = 1;
+  string notification_id = 2;
+}
+
+message NotificationMarkReadResponse {
+  bool success = 1;
+}
+
+message GetPreferencesRequest {
+  string user_id = 1;
+}
+
+message GetPreferencesResponse {
+  NotificationPreferences preferences = 1;
+}
+
+message UpdatePreferencesRequest {
+  string user_id = 1;
+  NotificationPreferences preferences = 2;
+}
+
+message UpdatePreferencesResponse {
+  NotificationPreferences preferences = 1;
+}
+
+message Notification {
+  string id = 1;
+  string user_id = 2;
+  NotificationType type = 3;
+  string title = 4;
+  string body = 5;
+  bool read = 6;
+  google.protobuf.Timestamp created_at = 7;
+}
+
+message NotificationPreferences {
+  bool in_app_enabled = 1;
+  bool push_enabled = 2;
+  bool email_enabled = 3;
+  bool sms_enabled = 4;
+  bool digest_mode = 5;
+}

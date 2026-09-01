@@ -11,11 +11,8 @@ import (
 type GrpcConn struct {
 	Auth          *grpc.ClientConn
 	User          *grpc.ClientConn
-	Question      *grpc.ClientConn
+	Doubt         *grpc.ClientConn
 	Matching      *grpc.ClientConn
-	Solution      *grpc.ClientConn
-	Chat          *grpc.ClientConn
-	Notification  *grpc.ClientConn
 	Knowledgebase *grpc.ClientConn
 	Analytics     *grpc.ClientConn
 	Admin         *grpc.ClientConn
@@ -43,19 +40,10 @@ func New(addrs Addrs) (*GrpcConn, error) {
 	if g.User, err = dial(addrs.User); err != nil {
 		return nil, err
 	}
-	if g.Question, err = dial(addrs.Question); err != nil {
+	if g.Doubt, err = dial(addrs.Doubt); err != nil {
 		return nil, err
 	}
 	if g.Matching, err = dial(addrs.Matching); err != nil {
-		return nil, err
-	}
-	if g.Solution, err = dial(addrs.Solution); err != nil {
-		return nil, err
-	}
-	if g.Chat, err = dial(addrs.Chat); err != nil {
-		return nil, err
-	}
-	if g.Notification, err = dial(addrs.Notification); err != nil {
 		return nil, err
 	}
 	if g.Knowledgebase, err = dial(addrs.Knowledgebase); err != nil {
@@ -75,11 +63,8 @@ func New(addrs Addrs) (*GrpcConn, error) {
 func (g *GrpcConn) Close() {
 	closeConn(g.Auth)
 	closeConn(g.User)
-	closeConn(g.Question)
+	closeConn(g.Doubt)
 	closeConn(g.Matching)
-	closeConn(g.Solution)
-	closeConn(g.Chat)
-	closeConn(g.Notification)
 	closeConn(g.Knowledgebase)
 	closeConn(g.Analytics)
 	closeConn(g.Admin)

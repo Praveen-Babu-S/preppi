@@ -44,7 +44,7 @@ infra-down:
 docker-build:
 	@echo "Building gateway..."
 	docker build -f deploy/docker/Dockerfile.gateway -t preppi/gateway .
-	@for s in auth user question matching solution chat notification knowledgebase analytics admin; do \
+	@for s in auth user doubt matching knowledgebase analytics admin; do \
 		echo "Building $$s service..."; \
 		docker build -f deploy/docker/Dockerfile.service --build-arg SERVICE=$$s -t preppi/$$s .; \
 	done

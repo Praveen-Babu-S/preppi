@@ -21,11 +21,8 @@ func main() {
 	addrs := clients.Addrs{
 		Auth:          envOr("AUTH_ADDR", "localhost:50051"),
 		User:          envOr("USER_ADDR", "localhost:50052"),
-		Question:      envOr("QUESTION_ADDR", "localhost:50053"),
+		Doubt:         envOr("DOUBT_ADDR", "localhost:50053"),
 		Matching:      envOr("MATCHING_ADDR", "localhost:50054"),
-		Solution:      envOr("SOLUTION_ADDR", "localhost:50055"),
-		Chat:          envOr("CHAT_ADDR", "localhost:50056"),
-		Notification:  envOr("NOTIFICATION_ADDR", "localhost:50057"),
 		Knowledgebase: envOr("KNOWLEDGEBASE_ADDR", "localhost:50058"),
 		Analytics:     envOr("ANALYTICS_ADDR", "localhost:50059"),
 		Admin:         envOr("ADMIN_ADDR", "localhost:50060"),
