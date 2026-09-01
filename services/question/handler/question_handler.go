@@ -114,7 +114,36 @@ func (h *QuestionHandler) SearchQuestions(ctx context.Context, req *pb.SearchQue
 }
 
 func (h *QuestionHandler) UpdateQuestion(ctx context.Context, req *pb.UpdateQuestionRequest) (*pb.UpdateQuestionResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "not implemented")
+	id, err := parseID(req.GetQuestionId())
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, "invalid question_id")
+	}
+
+	fields := map[string]any{}
+	if req.GetSubject() != "" {
+		fields["subject"] = req.GetSubject()
+	}
+	if req.GetTopic() != "" {
+		fields["topic"] = req.GetTopic()
+	}
+	if req.GetDescription() != "" {
+		fields["description"] = req.GetDescription()
+	}
+	if req.GetUrgency() != pb.Urgency_URGENCY_UNSPECIFIED {
+		fields["urgency"] = urgencyFromPB(req.GetUrgency())
+	}
+
+	if err := h.svc.Update(ctx, id, fields); err != nil {
+		if errors.Is(err, service.ErrValidation) {
+			return nil, status.Error(codes.InvalidArgument, "no fields to update")
+		}
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+	q, err := h.svc.GetByID(ctx, id)
+	if err != nil {
+		return nil, status.Error(codes.NotFound, "question not found")
+	}
+	return &pb.UpdateQuestionResponse{Question: toPB(q)}, nil
 }
 
 func idToStr(id uint) string {

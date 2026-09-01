@@ -1,6 +1,6 @@
 ---
 name: api-endpoint
-description: Use when adding, modifying, or removing client-facing REST endpoints in the doubt-resolver API gateway. Trigger on requests like "add an endpoint", "create a new API route", "expose an RPC over REST", "add a route for X". Creates/updates Gin handlers, routes, middleware, and maps to gRPC service calls.
+description: Use when adding, modifying, or removing client-facing REST endpoints in the preppi API gateway. Trigger on requests like "add an endpoint", "create a new API route", "expose an RPC over REST", "add a route for X". Creates/updates Gin handlers, routes, middleware, and maps to gRPC service calls.
 ---
 
 # API Endpoint
@@ -13,6 +13,7 @@ The gateway is the single entry point for web/mobile clients.
 ## When to Use
 
 Use this skill when the user asks to:
+
 - Add a new REST endpoint
 - Expose a gRPC RPC to clients
 - Modify/remove an existing endpoint
@@ -47,7 +48,7 @@ import (
     "github.com/gin-gonic/gin"
     "google.golang.org/grpc"
 
-    pb "github.com/<org>/doubt-resolver/proto/question/v1"
+    pb "github.com/<org>/preppi/proto/question/v1"
 )
 
 type QuestionHandler struct {
@@ -96,8 +97,8 @@ package routes
 import (
     "github.com/gin-gonic/gin"
 
-    "github.com/<org>/doubt-resolver/api-gateway/handlers"
-    "github.com/<org>/doubt-resolver/api-gateway/middleware"
+    "github.com/<org>/preppi/api-gateway/handlers"
+    "github.com/<org>/preppi/api-gateway/middleware"
 )
 
 func RegisterQuestionRoutes(r *gin.Engine, h *handlers.QuestionHandler) {
@@ -139,12 +140,14 @@ func SetupRouter(handlers *handlers.AllHandlers) *gin.Engine {
 ## Conventions
 
 ### REST Naming
+
 - Resource-based, plural nouns: `/api/v1/questions`, `/api/v1/solutions`
 - HTTP verbs map to actions: POST (create), GET (read), PUT (update), DELETE (remove)
 - Nested resources for sub-resources: `/api/v1/questions/:id/solutions`
 - Query params for filtering/pagination: `?page=1&page_size=20&status=open`
 
 ### Status Codes
+
 - `200 OK` — successful read/update/delete
 - `201 Created` — resource created
 - `400 Bad Request` — validation error
@@ -156,25 +159,33 @@ func SetupRouter(handlers *handlers.AllHandlers) *gin.Engine {
 - `500 Internal Server Error` — gRPC call failed
 
 ### Error Response Shape
+
 Always return errors consistently:
+
 ```json
-{ "error": { "code": "VALIDATION_ERROR", "message": "description is required" } }
+{
+  "error": { "code": "VALIDATION_ERROR", "message": "description is required" }
+}
 ```
 
 ### Middleware Chain
+
 Every endpoint goes through: `RequestID → Logging → CORS → Auth (protected routes) → RateLimit → Handler`
 
 ### Auth
+
 - Public: registration, login, health checks — no auth middleware
 - Protected: everything else — `middleware.Auth()` extracts user_id and role from JWT
 - Role restrictions enforced in middleware or handler (student vs mentor permissions)
 
 ### Routing to gRPC
+
 - Gateway maintains gRPC client connections to each service
 - Handlers call `service.GetXxx(c, &pb.Request{...})` and map the gRPC response to JSON
 - Errors from gRPC are translated to HTTP status codes
 
 ### Request IDs
+
 - Accept `X-Request-ID` header if present, else generate one
 - Propagate via gRPC metadata to services for tracing
 
@@ -189,6 +200,7 @@ Every endpoint goes through: `RequestID → Logging → CORS → Auth (protected
 ## After Creating
 
 Remind the user to:
+
 - Test with `curl` or the API client
 - Run `make build` and `make test` to verify
 - Update OpenAPI/Swagger docs if present

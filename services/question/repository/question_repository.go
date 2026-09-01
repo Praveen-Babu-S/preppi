@@ -9,8 +9,8 @@ import (
 )
 
 type Question struct {
-	ID          uint   `gorm:"primaryKey"`
-	StudentID   uint   `gorm:"index:idx_questions_student_status,priority:2;not null"`
+	ID          uint `gorm:"primaryKey"`
+	StudentID   uint `gorm:"index:idx_questions_student_status,priority:2;not null"`
 	AssigneeID  uint
 	Subject     string `gorm:"size:100;not null"`
 	Topic       string `gorm:"size:100"`

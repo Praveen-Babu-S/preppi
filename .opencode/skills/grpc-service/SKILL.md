@@ -1,18 +1,19 @@
 ---
 name: grpc-service
-description: Use when creating, scaffolding, or adding a new microservice in the doubt-resolver platform. Trigger on requests like "create a new service", "scaffold a microservice", "add a service for <domain>". Generates the full service structure (main.go, handler, repository, service, migrations, proto, Dockerfile) following project conventions.
+description: Use when creating, scaffolding, or adding a new microservice in the preppi platform. Trigger on requests like "create a new service", "scaffold a microservice", "add a service for <domain>". Generates the full service structure (main.go, handler, repository, service, migrations, proto, Dockerfile) following project conventions.
 ---
 
 # gRPC Microservice Scaffolding
 
 ## Purpose
 
-Create a new microservice following the doubt-resolver project conventions. The service follows
+Create a new microservice following the preppi project conventions. The service follows
 the layered architecture: gRPC handler → service (business logic) → repository (DB access).
 
 ## When to Use
 
 Use this skill when the user asks to:
+
 - Create a new microservice (e.g., "add a chat service", "create a reports service")
 - Scaffold a service skeleton
 - Generate a new service's structure
@@ -70,13 +71,13 @@ import (
     "google.golang.org/grpc"
     "github.com/rs/zerolog"
 
-    "github.com/<org>/doubt-resolver/pkg/config"
-    "github.com/<org>/doubt-resolver/pkg/database"
-    "github.com/<org>/doubt-resolver/pkg/logger"
-    pb "github.com/<org>/doubt-resolver/proto/<name>/v1"
-    "<org>/doubt-resolver/services/<name>/handler"
-    "<org>/doubt-resolver/services/<name>/repository"
-    "<org>/doubt-resolver/services/<name>/service"
+    "github.com/<org>/preppi/pkg/config"
+    "github.com/<org>/preppi/pkg/database"
+    "github.com/<org>/preppi/pkg/logger"
+    pb "github.com/<org>/preppi/proto/<name>/v1"
+    "<org>/preppi/services/<name>/handler"
+    "<org>/preppi/services/<name>/repository"
+    "<org>/preppi/services/<name>/service"
 )
 
 func main() {

@@ -1,0 +1,2 @@
+DROP TABLE IF EXISTS kb_topics;
+DROP TABLE IF EXISTS kb_articles;

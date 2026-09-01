@@ -57,6 +57,25 @@ func (s *QuestionService) UpdateStatus(ctx context.Context, id uint, status stri
 	return s.repo.UpdateFields(ctx, id, map[string]any{"status": status})
 }
 
+func (s *QuestionService) Update(ctx context.Context, id uint, fields map[string]any) error {
+	if len(fields) == 0 {
+		return ErrValidation
+	}
+	if _, ok := fields["status"]; ok {
+		if v, isStr := fields["status"].(string); isStr && !validStatus(v) {
+			return fmt.Errorf("invalid status %q", v)
+		}
+	}
+	if _, ok := fields["urgency"]; ok {
+		if v, isStr := fields["urgency"].(string); isStr {
+			if v != "low" && v != "normal" && v != "urgent" {
+				return fmt.Errorf("invalid urgency %q", v)
+			}
+		}
+	}
+	return s.repo.UpdateFields(ctx, id, fields)
+}
+
 func (s *QuestionService) Assign(ctx context.Context, id uint, mentorID uint) error {
 	return s.repo.UpdateFields(ctx, id, map[string]any{
 		"assignee_id": mentorID,

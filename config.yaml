@@ -30,7 +30,7 @@ storage:
   endpoint: localhost:9000
   access_key: minioadmin
   secret_key: minioadmin
-  bucket: doubt-resolver
+  bucket: preppi
   use_ssl: false
 
 jwt:

@@ -2,7 +2,7 @@ apiVersion: v1
 kind: Secret
 metadata:
   name: doubt-postgres-secret
-  namespace: doubt-resolver
+  namespace: preppi
 type: Opaque
 stringData:
   POSTGRES_USER: postgres
@@ -13,7 +13,7 @@ apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   name: postgres
-  namespace: doubt-resolver
+  namespace: preppi
 spec:
   serviceName: postgres
   replicas: 1
@@ -53,7 +53,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: postgres
-  namespace: doubt-resolver
+  namespace: preppi
 spec:
   selector:
     app: postgres

@@ -71,6 +71,7 @@ func New(addrs Addrs) (*GrpcConn, error) {
 	return g, nil
 }
 
+// gracefully close all the opened network conns
 func (g *GrpcConn) Close() {
 	closeConn(g.Auth)
 	closeConn(g.User)

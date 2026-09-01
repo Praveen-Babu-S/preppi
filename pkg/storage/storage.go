@@ -32,7 +32,7 @@ func New(cfg *config.Config) (*Client, error) {
 
 	bucket := cfg.Storage.Bucket
 	if bucket == "" {
-		bucket = "doubt-resolver"
+		bucket = "preppi"
 	}
 
 	exists, err := client.BucketExists(ctx, bucket)

@@ -1,18 +1,19 @@
 ---
 name: proto-definition
-description: Use when creating, editing, or updating protobuf definitions (proto3) for the doubt-resolver platform. Trigger on requests like "add an RPC", "create a proto file", "update the question proto", "define messages for X". Enforces project proto conventions including package naming, pagination, timestamps, and error handling.
+description: Use when creating, editing, or updating protobuf definitions (proto3) for the preppi platform. Trigger on requests like "add an RPC", "create a proto file", "update the question proto", "define messages for X". Enforces project proto conventions including package naming, pagination, timestamps, and error handling.
 ---
 
 # Proto Definition
 
 ## Purpose
 
-Create and maintain Protocol Buffers (proto3) definitions for the doubt-resolver microservices
+Create and maintain Protocol Buffers (proto3) definitions for the preppi microservices
 following the project's proto conventions.
 
 ## When to Use
 
 Use this skill when the user asks to:
+
 - Create a new `.proto` file
 - Add RPC methods to an existing service
 - Add/modify message definitions
@@ -30,16 +31,17 @@ syntax = "proto3";
 
 package <service>.v1;
 
-option go_package = "github.com/<org>/doubt-resolver/proto/<service>/v1;v1";
+option go_package = "github.com/<org>/preppi/proto/<service>/v1;v1";
 ```
 
 Example:
+
 ```proto
 syntax = "proto3";
 
 package question.v1;
 
-option go_package = "github.com/<org>/doubt-resolver/proto/question/v1;v1";
+option go_package = "github.com/<org>/preppi/proto/question/v1;v1";
 ```
 
 ## Naming Conventions
@@ -55,7 +57,9 @@ option go_package = "github.com/<org>/doubt-resolver/proto/question/v1;v1";
 ## Message Conventions
 
 ### Timestamps
+
 Always use `google.protobuf.Timestamp`, never strings:
+
 ```proto
 import "google.protobuf/timestamp.proto";
 
@@ -65,7 +69,9 @@ message Question {
 ```
 
 ### Partial Updates
+
 Use `google.protobuf.FieldMask` for partial updates:
+
 ```proto
 import "google.protobuf/field_mask.proto";
 
@@ -76,7 +82,9 @@ message UpdateQuestionRequest {
 ```
 
 ### Pagination
+
 List requests use `page_token` + `page_size`; responses use `next_page_token`:
+
 ```proto
 message ListQuestionsRequest {
   string student_id = 1;
@@ -91,11 +99,13 @@ message ListQuestionsResponse {
 ```
 
 ### Field Number Rules
+
 - 1-15: frequently used fields (lower wire overhead, 1 byte)
 - 16+: less frequent fields
 - Never reuse a field number; never change a field type (forward/backward compat)
 
 ### Enums
+
 ```proto
 enum QuestionStatus {
   QUESTION_STATUS_UNSPECIFIED = 0;
@@ -136,7 +146,7 @@ package <service>.v1;
 import "google/protobuf/timestamp.proto";
 import "google/protobuf/field_mask.proto";
 
-option go_package = "github.com/<org>/doubt-resolver/proto/<service>/v1;v1";
+option go_package = "github.com/<org>/preppi/proto/<service>/v1;v1";
 
 service <Name>Service {
   rpc Create( CreateRequest) returns ( CreateResponse);
@@ -168,7 +178,9 @@ message CreateResponse {
 ## After Writing
 
 After creating or editing proto files, remind the user to regenerate Go code:
+
 ```
 make proto-gen
 ```
+
 Or run the protoc command directly for the modified proto.

@@ -39,7 +39,7 @@ smartly routed questions by subject expertise, and can answer or skip.
 ## Directory Structure
 
 ```
-doubt-resolver/
+preppi/
 ├── api-gateway/          # Gin REST API gateway
 │   ├── routes/           # Route registry
 │   ├── middleware/       # Auth, rate-limit, CORS, logging
