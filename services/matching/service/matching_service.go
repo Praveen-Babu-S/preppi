@@ -3,16 +3,15 @@ package service
 import (
 	"context"
 	"errors"
-	"fmt"
 	"time"
 
 	"preppi.com/services/matching/repository"
 )
 
 var (
-	ErrNoCandidates      = errors.New("no candidates available")
-	ErrAlreadyAssigned   = errors.New("question already assigned")
-	ErrMaxEscalation     = errors.New("max escalation level reached")
+	ErrNoCandidates       = errors.New("no candidates available")
+	ErrAlreadyAssigned    = errors.New("question already assigned")
+	ErrMaxEscalation      = errors.New("max escalation level reached")
 	ErrAssignmentNotFound = errors.New("assignment not found")
 )
 

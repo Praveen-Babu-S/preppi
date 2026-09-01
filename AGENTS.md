@@ -1,4 +1,4 @@
-# Doubt Resolver — Agent Instructions
+# Preppi — Agent Instructions
 
 ## Project Overview
 
