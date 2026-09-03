@@ -3,11 +3,11 @@ version: "3.9"
 services:
   postgres:
     image: postgres:16-alpine
-    container_name: doubt-postgres
+    container_name: preppi-postgres
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: doubt_resolver
+      POSTGRES_DB: preppi
     ports:
       - "5432:5432"
     volumes:
@@ -20,7 +20,7 @@ services:
 
   redis:
     image: redis:7-alpine
-    container_name: doubt-redis
+    container_name: preppi-redis
     ports:
       - "6379:6379"
     volumes:
@@ -34,7 +34,7 @@ services:
 
   nats:
     image: nats:2.10-alpine
-    container_name: doubt-nats
+    container_name: preppi-nats
     command: ["-js", "-m", "8222"]
     ports:
       - "4222:4222"   # client
@@ -47,7 +47,7 @@ services:
 
   minio:
     image: minio/minio:latest
-    container_name: doubt-minio
+    container_name: preppi-minio
     command: server /data --console-address ":9001"
     environment:
       MINIO_ROOT_USER: minioadmin

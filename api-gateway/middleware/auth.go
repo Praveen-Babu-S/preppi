@@ -54,8 +54,8 @@ func RequireRole(roles ...string) gin.HandlerFunc {
 }
 
 func BearerToken(header string) string {
-	if strings.HasPrefix(header, "Bearer ") {
-		return strings.TrimPrefix(header, "Bearer ")
+	if after, ok := strings.CutPrefix(header, "Bearer "); ok {
+		return after
 	}
 	return header
 }

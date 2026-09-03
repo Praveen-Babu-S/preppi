@@ -1,17 +1,28 @@
 {
   "$schema": "https://opencode.ai/config.json",
-  "instructions": ["AGENTS.md"],
+  "instructions": [
+    "AGENTS.md"
+  ],
   "lsp": {
     "gopls": {
-      "command": ["gopls"],
-      "extensions": [".go"],
+      "command": [
+        "gopls"
+      ],
+      "extensions": [
+        ".go"
+      ],
       "env": {
         "GOFLAGS": "-mod=mod"
       }
     },
     "protobuf": {
-      "command": ["buf", "lsp"],
-      "extensions": [".proto"]
+      "command": [
+        "buf",
+        "lsp"
+      ],
+      "extensions": [
+        ".proto"
+      ]
     }
   },
   "mcp": {
@@ -30,7 +41,11 @@
     },
     "sequential-thinking": {
       "type": "local",
-      "command": ["npx", "-y", "@modelcontextprotocol/server-sequential-thinking"],
+      "command": [
+        "npx",
+        "-y",
+        "@modelcontextprotocol/server-sequential-thinking"
+      ],
       "enabled": true
     }
   },
@@ -49,6 +64,7 @@
     }
   },
   "permission": {
+    "skill": "allow",
     "bash": {
       "go *": "allow",
       "make *": "allow",
@@ -56,11 +72,15 @@
       "buf *": "allow",
       "docker *": "allow",
       "docker-compose *": "allow",
+      "npm *": "allow",
+      "npx *": "allow",
+      "grep *": "allow",
       "kubectl *": "ask",
       "rm -rf *": "deny",
       "*": "ask"
     },
     "edit": "allow",
+    "glob": "allow",
     "external_directory": {
       "~/**": "ask",
       "/etc/**": "deny"
