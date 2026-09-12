@@ -13,7 +13,7 @@ import (
 	"preppi.com/pkg/database"
 	"preppi.com/pkg/logger"
 	"preppi.com/pkg/middleware"
-	pb "preppi.com/proto/auth/v1"
+	pb "preppi.com/proto/auth"
 	"preppi.com/services/auth/handler"
 	"preppi.com/services/auth/repository"
 	"preppi.com/services/auth/service"
@@ -22,6 +22,7 @@ import (
 func main() {
 	cfg := config.Load("auth")
 	log := logger.New(cfg.LogLevel)
+	log.Info().Str("service", "auth").Int("port", cfg.GRPCPort).Str("logLevel", cfg.LogLevel).Msg("starting service")
 
 	db, err := database.Connect(cfg)
 	if err != nil {

@@ -1,10 +1,10 @@
 syntax = "proto3";
 
-package auth.v1;
+package auth;
 
 import "google/protobuf/timestamp.proto";
 
-option go_package = "preppi.com/proto/auth/v1;v1";
+option go_package = "preppi.com/proto/auth";
 
 enum Role {
   ROLE_UNSPECIFIED = 0;

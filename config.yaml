@@ -12,9 +12,9 @@ http:
 database:
   host: localhost
   port: 5432
-  user: postgres
-  password: postgres
-  name: doubt_resolver
+  user: praveen
+  password: 1234
+  name: postgres
   sslmode: disable
 
 redis:
@@ -34,7 +34,7 @@ storage:
   use_ssl: false
 
 jwt:
-  public_key: ""
-  private_key: ""
+  public_key: "public.pem"
+  private_key: "private.p8"
   access_ttl: 15
   refresh_ttl: 24

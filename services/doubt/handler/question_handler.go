@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 
+	"github.com/rs/zerolog/log"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -33,8 +34,10 @@ func (h *QuestionHandler) CreateQuestion(ctx context.Context, req *pb.CreateQues
 	id, qStatus, err := h.svc.CreateQuestion(ctx, studentID, req.GetSubject(), req.GetTopic(), req.GetDescription(), req.GetImageUrls(), urgency)
 	if err != nil {
 		if errors.Is(err, service.ErrValidation) {
+			log.Warn().Err(err).Uint("student_id", studentID).Msg("invalid question payload")
 			return nil, status.Error(codes.InvalidArgument, "subject and description are required")
 		}
+		log.Error().Err(err).Uint("student_id", studentID).Msg("failed to create question")
 		return nil, status.Error(codes.Internal, "failed to create question")
 	}
 
@@ -54,8 +57,10 @@ func (h *QuestionHandler) GetQuestionById(ctx context.Context, req *pb.GetQuesti
 	q, err := h.svc.GetQuestion(ctx, id)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
+			log.Info().Uint("id", id).Msg("question not found")
 			return nil, status.Error(codes.NotFound, "question not found")
 		}
+		log.Error().Err(err).Uint("id", id).Msg("failed to get question")
 		return nil, status.Error(codes.Internal, "failed to get question")
 	}
 	return &pb.GetQuestionByIdResponse{Question: toQuestionPB(q)}, nil
@@ -72,6 +77,7 @@ func (h *QuestionHandler) ListQuestionsByStudent(ctx context.Context, req *pb.Li
 	}
 	questions, err := h.svc.ListQuestionsByStudent(ctx, studentID, limit, 0)
 	if err != nil {
+		log.Error().Err(err).Uint("student_id", studentID).Msg("failed to list questions")
 		return nil, status.Error(codes.Internal, "failed to list questions")
 	}
 	resp := &pb.ListQuestionsByStudentResponse{}
@@ -88,10 +94,12 @@ func (h *QuestionHandler) UpdateQuestionStatus(ctx context.Context, req *pb.Upda
 	}
 	statusStr := statusToString(req.GetStatus())
 	if err := h.svc.UpdateQuestionStatus(ctx, id, statusStr); err != nil {
+		log.Warn().Err(err).Uint("id", id).Str("status", statusStr).Msg("invalid question status update")
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 	q, err := h.svc.GetQuestion(ctx, id)
 	if err != nil {
+		log.Error().Err(err).Uint("id", id).Msg("failed to get question after status update")
 		return nil, status.Error(codes.Internal, "failed to get question")
 	}
 	return &pb.UpdateQuestionStatusResponse{Question: toQuestionPB(q)}, nil
@@ -104,6 +112,7 @@ func (h *QuestionHandler) SearchQuestions(ctx context.Context, req *pb.SearchQue
 	}
 	questions, err := h.svc.SearchQuestions(ctx, req.GetQuery(), req.GetSubject(), limit, 0)
 	if err != nil {
+		log.Error().Err(err).Str("query", req.GetQuery()).Str("subject", req.GetSubject()).Msg("search failed")
 		return nil, status.Error(codes.Internal, "search failed")
 	}
 	resp := &pb.SearchQuestionsResponse{}
@@ -135,12 +144,15 @@ func (h *QuestionHandler) UpdateQuestion(ctx context.Context, req *pb.UpdateQues
 
 	if err := h.svc.UpdateQuestion(ctx, id, fields); err != nil {
 		if errors.Is(err, service.ErrValidation) {
+			log.Warn().Err(err).Uint("id", id).Msg("no fields to update")
 			return nil, status.Error(codes.InvalidArgument, "no fields to update")
 		}
+		log.Error().Err(err).Uint("id", id).Msg("failed to update question")
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 	q, err := h.svc.GetQuestion(ctx, id)
 	if err != nil {
+		log.Error().Err(err).Uint("id", id).Msg("question not found after update")
 		return nil, status.Error(codes.NotFound, "question not found")
 	}
 	return &pb.UpdateQuestionResponse{Question: toQuestionPB(q)}, nil

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 
+	"github.com/rs/zerolog/log"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -34,10 +35,15 @@ func (h *UserHandler) CreateProfile(ctx context.Context, req *pb.CreateProfileRe
 		req.GetSchool(), req.GetCollege(), req.GetBio(), roleToString(req.GetRole()),
 		req.GetExpertiseSubjects(), req.GetSubTopics(),
 	); err != nil {
+		log.Error().Err(err).Uint("user_id", userID).Msg("failed to create profile")
 		return nil, status.Error(codes.Internal, "failed to create profile")
 	}
 
-	prof, _ := h.svc.GetProfile(ctx, userID)
+	prof, err := h.svc.GetProfile(ctx, userID)
+	if err != nil {
+		log.Error().Err(err).Uint("user_id", userID).Msg("failed to load created profile")
+		return nil, status.Error(codes.Internal, "failed to get profile")
+	}
 	return &pb.CreateProfileResponse{Profile: toProfile(prof)}, nil
 }
 
@@ -50,8 +56,10 @@ func (h *UserHandler) GetProfile(ctx context.Context, req *pb.GetProfileRequest)
 	p, err := h.svc.GetProfile(ctx, userID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
+			log.Info().Uint("user_id", userID).Msg("profile not found")
 			return nil, status.Error(codes.NotFound, "profile not found")
 		}
+		log.Error().Err(err).Uint("user_id", userID).Msg("failed to get profile")
 		return nil, status.Error(codes.Internal, "failed to get profile")
 	}
 	return &pb.GetProfileResponse{Profile: toProfile(p)}, nil
@@ -64,9 +72,18 @@ func (h *UserHandler) UpdateProfile(ctx context.Context, req *pb.UpdateProfileRe
 	}
 
 	if err := h.svc.UpdateProfile(ctx, userID, req.GetName(), req.GetAvatarUrl(), req.GetBio(), req.GetSchool(), req.GetCollege()); err != nil {
+		if errors.Is(err, service.ErrProfileNotFound) {
+			log.Info().Uint("user_id", userID).Msg("profile not found for update")
+			return nil, status.Error(codes.NotFound, "profile not found")
+		}
+		log.Error().Err(err).Uint("user_id", userID).Msg("failed to update profile")
 		return nil, status.Error(codes.Internal, "failed to update profile")
 	}
-	p, _ := h.svc.GetProfile(ctx, userID)
+	p, err := h.svc.GetProfile(ctx, userID)
+	if err != nil {
+		log.Error().Err(err).Uint("user_id", userID).Msg("failed to load updated profile")
+		return nil, status.Error(codes.Internal, "failed to get profile")
+	}
 	return &pb.UpdateProfileResponse{Profile: toProfile(p)}, nil
 }
 
@@ -77,11 +94,17 @@ func (h *UserHandler) UpdateMentorProfile(ctx context.Context, req *pb.UpdateMen
 	}
 
 	if err := h.svc.UpdateMentorProfile(ctx, userID, req.GetExpertiseSubjects(), req.GetSubTopics(), req.GetBio()); err != nil {
+		if errors.Is(err, service.ErrNoMentorProfile) {
+			log.Info().Uint("user_id", userID).Msg("mentor profile not found for update")
+			return nil, status.Error(codes.NotFound, "mentor profile not found")
+		}
+		log.Error().Err(err).Uint("user_id", userID).Msg("failed to update mentor profile")
 		return nil, status.Error(codes.Internal, "failed to update mentor profile")
 	}
 
 	m, err := h.svc.GetMentorProfile(ctx, userID)
 	if err != nil {
+		log.Error().Err(err).Uint("user_id", userID).Msg("failed to load mentor profile")
 		return nil, status.Error(codes.Internal, "failed to get mentor profile")
 	}
 	return &pb.UpdateMentorProfileResponse{Mentor: toMentor(m)}, nil
@@ -94,6 +117,7 @@ func (h *UserHandler) GetMentorsBySubject(ctx context.Context, req *pb.GetMentor
 	}
 	mentors, err := h.svc.GetMentorsBySubject(ctx, req.GetSubject(), limit, 0)
 	if err != nil {
+		log.Error().Err(err).Str("subject", req.GetSubject()).Msg("failed to get mentors")
 		return nil, status.Error(codes.Internal, "failed to get mentors")
 	}
 	resp := &pb.GetMentorsBySubjectResponse{}
@@ -110,6 +134,7 @@ func (h *UserHandler) SetOnlineStatus(ctx context.Context, req *pb.SetOnlineStat
 	}
 	online := req.GetStatus() == pb.OnlineStatus_ONLINE_STATUS_ONLINE
 	if err := h.svc.SetOnline(ctx, userID, online); err != nil {
+		log.Error().Err(err).Uint("user_id", userID).Bool("online", online).Msg("failed to update online status")
 		return nil, status.Error(codes.Internal, "failed to update online status")
 	}
 	return &pb.SetOnlineStatusResponse{Success: true}, nil
@@ -121,6 +146,7 @@ func (h *UserHandler) ApproveMentor(ctx context.Context, req *pb.ApproveMentorRe
 		return nil, status.Error(codes.InvalidArgument, "invalid user id")
 	}
 	if err := h.svc.ApproveMentor(ctx, userID, req.GetApproved()); err != nil {
+		log.Error().Err(err).Uint("user_id", userID).Bool("approved", req.GetApproved()).Msg("failed to approve mentor")
 		return nil, status.Error(codes.Internal, "failed to approve mentor")
 	}
 	statusStr := pb.VerificationStatus_VERIFICATION_STATUS_APPROVED

@@ -15,6 +15,7 @@ import (
 func main() {
 	cfg := config.Load("gateway")
 	log := logger.New(cfg.LogLevel)
+	log.Info().Int("port", cfg.HTTPPort).Str("service", "api-gateway").Str("logLevel", cfg.LogLevel).Msg("starting service")
 
 	// Map of service addresses. In production these come from env/K8s service discovery.
 	// Local defaults point to docker-compose service names.

@@ -2,9 +2,9 @@ package repository
 
 import (
 	"context"
-	"fmt"
 	"time"
 
+	"github.com/rs/zerolog/log"
 	"gorm.io/gorm"
 )
 
@@ -46,13 +46,22 @@ func New(db *gorm.DB) Repository {
 }
 
 func (r *repository) CreateAssignment(ctx context.Context, a *Assignment) error {
-	return fmt.Errorf("matching_repo_create_assignment: %w", r.db.WithContext(ctx).Create(a).Error)
+	err := r.db.WithContext(ctx).Create(a).Error
+	if err != nil {
+		log.Error().Err(err).Uint("question_id", a.QuestionID).Uint("mentor_id", a.MentorID).Msg("unable to create assignment")
+	}
+	return err
 }
 
 func (r *repository) GetAssignmentByQuestion(ctx context.Context, questionID uint) (*Assignment, error) {
 	var a Assignment
 	if err := r.db.WithContext(ctx).Where("question_id = ?", questionID).Order("assigned_at DESC").First(&a).Error; err != nil {
-		return nil, fmt.Errorf("matching_repo_find_assignment: %w", err)
+		if err == gorm.ErrRecordNotFound {
+			log.Info().Uint("question_id", questionID).Msg("assignment not found for question")
+		} else {
+			log.Error().Err(err).Uint("question_id", questionID).Msg("unable to find assignment")
+		}
+		return nil, err
 	}
 	return &a, nil
 }
@@ -60,7 +69,12 @@ func (r *repository) GetAssignmentByQuestion(ctx context.Context, questionID uin
 func (r *repository) GetAssignmentByID(ctx context.Context, id uint) (*Assignment, error) {
 	var a Assignment
 	if err := r.db.WithContext(ctx).First(&a, id).Error; err != nil {
-		return nil, fmt.Errorf("matching_repo_find_assignment_by_id: %w", err)
+		if err == gorm.ErrRecordNotFound {
+			log.Info().Uint("id", id).Msg("assignment not found")
+		} else {
+			log.Error().Err(err).Uint("id", id).Msg("unable to find assignment by id")
+		}
+		return nil, err
 	}
 	return &a, nil
 }
@@ -70,8 +84,11 @@ func (r *repository) UpdateAssignmentStatus(ctx context.Context, id uint, status
 	if !respondedAt.IsZero() {
 		updates["responded_at"] = respondedAt.Unix()
 	}
-	return fmt.Errorf("matching_repo_update_status: %w",
-		r.db.WithContext(ctx).Model(&Assignment{}).Where("id = ?", id).Updates(updates).Error)
+	err := r.db.WithContext(ctx).Model(&Assignment{}).Where("id = ?", id).Updates(updates).Error
+	if err != nil {
+		log.Error().Err(err).Uint("id", id).Str("status", status).Msg("unable to update assignment status")
+	}
+	return err
 }
 
 func (r *repository) GetPendingCount(ctx context.Context, mentorID uint) (int, error) {
@@ -80,7 +97,11 @@ func (r *repository) GetPendingCount(ctx context.Context, mentorID uint) (int, e
 		Model(&Assignment{}).
 		Where("mentor_id = ? AND status = 'pending'", mentorID).
 		Count(&count).Error
-	return int(count), fmt.Errorf("matching_repo_pending_count: %w", err)
+	if err != nil {
+		log.Error().Err(err).Uint("mentor_id", mentorID).Msg("unable to count pending assignments")
+		return 0, err
+	}
+	return int(count), nil
 }
 
 func (r *repository) GetPendingForMentor(ctx context.Context, mentorID uint, limit, offset int) ([]Assignment, error) {
@@ -90,11 +111,19 @@ func (r *repository) GetPendingForMentor(ctx context.Context, mentorID uint, lim
 		Order("assigned_at ASC").
 		Limit(limit).Offset(offset).
 		Find(&assignments).Error
-	return assignments, fmt.Errorf("matching_repo_pending_for_mentor: %w", err)
+	if err != nil {
+		log.Error().Err(err).Uint("mentor_id", mentorID).Msg("unable to list pending assignments")
+		return nil, err
+	}
+	return assignments, nil
 }
 
 func (r *repository) CreateEscalation(ctx context.Context, e *Escalation) error {
-	return fmt.Errorf("matching_repo_create_escalation: %w", r.db.WithContext(ctx).Create(e).Error)
+	err := r.db.WithContext(ctx).Create(e).Error
+	if err != nil {
+		log.Error().Err(err).Uint("question_id", e.QuestionID).Int("level", e.EscalationLevel).Msg("unable to create escalation")
+	}
+	return err
 }
 
 func (r *repository) GetLatestEscalation(ctx context.Context, questionID uint) (*Escalation, error) {
@@ -104,7 +133,12 @@ func (r *repository) GetLatestEscalation(ctx context.Context, questionID uint) (
 		Order("created_at DESC").
 		First(&e).Error
 	if err != nil {
-		return &Escalation{EscalationLevel: 0}, fmt.Errorf("matching_repo_get_escalation: %w", err)
+		if err == gorm.ErrRecordNotFound {
+			log.Info().Uint("question_id", questionID).Msg("no escalation found")
+			return nil, nil
+		}
+		log.Error().Err(err).Uint("question_id", questionID).Msg("unable to get latest escalation")
+		return nil, err
 	}
 	return &e, nil
 }

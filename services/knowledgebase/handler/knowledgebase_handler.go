@@ -2,12 +2,15 @@ package handler
 
 import (
 	"context"
+	"errors"
 	"strconv"
 	"time"
 
+	"github.com/rs/zerolog/log"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
+	"gorm.io/gorm"
 
 	pb "preppi.com/proto/knowledgebase/v1"
 	"preppi.com/services/knowledgebase/repository"
@@ -30,6 +33,7 @@ func (h *KnowledgeBaseHandler) SearchKB(ctx context.Context, req *pb.SearchKBReq
 	}
 	articles, err := h.svc.Search(ctx, req.GetQuery(), req.GetSubject(), limit, 0)
 	if err != nil {
+		log.Error().Err(err).Str("query", req.GetQuery()).Msg("search failed")
 		return nil, status.Error(codes.Internal, "search failed")
 	}
 	resp := &pb.SearchKBResponse{}
@@ -46,7 +50,12 @@ func (h *KnowledgeBaseHandler) GetArticle(ctx context.Context, req *pb.GetArticl
 	}
 	a, err := h.svc.GetArticle(ctx, id)
 	if err != nil {
-		return nil, status.Error(codes.NotFound, "article not found")
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			log.Info().Uint("id", id).Msg("article not found")
+			return nil, status.Error(codes.NotFound, "article not found")
+		}
+		log.Error().Err(err).Uint("id", id).Msg("failed to get article")
+		return nil, status.Error(codes.Internal, "failed to get article")
 	}
 	return &pb.GetArticleResponse{Article: articleToPB(a), FullText: a.FullText}, nil
 }
@@ -54,6 +63,7 @@ func (h *KnowledgeBaseHandler) GetArticle(ctx context.Context, req *pb.GetArticl
 func (h *KnowledgeBaseHandler) GetRelatedTopics(ctx context.Context, req *pb.GetRelatedTopicsRequest) (*pb.GetRelatedTopicsResponse, error) {
 	topics, err := h.svc.GetRelatedTopics(ctx, req.GetTopic(), req.GetSubject())
 	if err != nil {
+		log.Error().Err(err).Str("topic", req.GetTopic()).Msg("failed to get related topics")
 		return nil, status.Error(codes.Internal, "failed to get related topics")
 	}
 	resp := &pb.GetRelatedTopicsResponse{}
@@ -66,6 +76,7 @@ func (h *KnowledgeBaseHandler) GetRelatedTopics(ctx context.Context, req *pb.Get
 func (h *KnowledgeBaseHandler) SuggestKeywords(ctx context.Context, req *pb.SuggestKeywordsRequest) (*pb.SuggestKeywordsResponse, error) {
 	keywords, err := h.svc.SuggestKeywords(ctx, req.GetQuery())
 	if err != nil {
+		log.Error().Err(err).Str("query", req.GetQuery()).Msg("failed to suggest keywords")
 		return nil, status.Error(codes.Internal, "failed to suggest keywords")
 	}
 	return &pb.SuggestKeywordsResponse{Keywords: keywords}, nil

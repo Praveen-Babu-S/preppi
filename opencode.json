@@ -75,8 +75,11 @@
       "npm *": "allow",
       "npx *": "allow",
       "grep *": "allow",
+      "find": "allow",
+      "ls": "allow",
       "kubectl *": "ask",
-      "rm -rf *": "deny",
+      "git" : "allow",
+      "rm -rf *": "ask",
       "*": "ask"
     },
     "edit": "allow",

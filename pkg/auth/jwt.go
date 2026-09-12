@@ -1,7 +1,6 @@
 package auth
 
 import (
-	"context"
 	"crypto/rsa"
 	"errors"
 	"fmt"
@@ -10,7 +9,7 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
-	"google.golang.org/grpc/metadata"
+	"github.com/rs/zerolog/log"
 )
 
 var (
@@ -43,11 +42,13 @@ func NewManager(pubKeyPath, privKeyPath string, accessTTL, refreshTTL time.Durat
 	if pubKeyPath != "" {
 		pubBytes, err := os.ReadFile(pubKeyPath)
 		if err != nil {
-			return nil, fmt.Errorf("read public key: %w", err)
+			log.Info().Err(err).Msg("unable to read public key")
+			return nil, err
 		}
 		pubKey, err := jwt.ParseRSAPublicKeyFromPEM(pubBytes)
 		if err != nil {
-			return nil, fmt.Errorf("parse public key: %w", err)
+			log.Info().Err(err).Msg("unable to parse public key")
+			return nil, err
 		}
 		m.publicKey = pubKey
 	}
@@ -55,11 +56,13 @@ func NewManager(pubKeyPath, privKeyPath string, accessTTL, refreshTTL time.Durat
 	if privKeyPath != "" {
 		privBytes, err := os.ReadFile(privKeyPath)
 		if err != nil {
-			return nil, fmt.Errorf("read private key: %w", err)
+			log.Info().Err(err).Msg("unable to read private key")
+			return nil, err
 		}
 		privKey, err := jwt.ParseRSAPrivateKeyFromPEM(privBytes)
 		if err != nil {
-			return nil, fmt.Errorf("parse private key: %w", err)
+			log.Info().Err(err).Msg("unable to parse private key")
+			return nil, err
 		}
 		m.privateKey = privKey
 	}
@@ -86,6 +89,7 @@ func (m *Manager) GenerateAccessToken(userID, role string) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodRS256, claims)
 	signed, err := token.SignedString(m.privateKey)
 	if err != nil {
+		log.Error().Err(err).Str("user_id", userID).Msg("unable to sign access token")
 		return "", fmt.Errorf("sign access token: %w", err)
 	}
 	return signed, nil
@@ -109,6 +113,7 @@ func (m *Manager) GenerateRefreshToken(userID string) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodRS256, claims)
 	signed, err := token.SignedString(m.privateKey)
 	if err != nil {
+		log.Error().Err(err).Str("user_id", userID).Msg("unable to sign refresh token")
 		return "", fmt.Errorf("sign refresh token: %w", err)
 	}
 	return signed, nil
@@ -116,6 +121,7 @@ func (m *Manager) GenerateRefreshToken(userID string) (string, error) {
 
 func (m *Manager) ValidateToken(tokenStr string) (*Claims, error) {
 	if m.publicKey == nil {
+		log.Warn().Msg("public key not configured, cannot validate token")
 		return nil, ErrNoPublicKey
 	}
 
@@ -127,29 +133,27 @@ func (m *Manager) ValidateToken(tokenStr string) (*Claims, error) {
 		return m.publicKey, nil
 	})
 	if err != nil {
-		return nil, fmt.Errorf("parse token: %w", err)
+		switch {
+		case errors.Is(err, jwt.ErrTokenExpired):
+			log.Info().Str("subject", claims.Subject).Msg("token expired")
+			return nil, ErrTokenExpired
+		case errors.Is(err, jwt.ErrTokenUsedBeforeIssued), errors.Is(err, jwt.ErrTokenNotValidYet):
+			log.Warn().Err(err).Str("subject", claims.Subject).Msg("token not yet valid")
+			return nil, ErrInvalidToken
+		default:
+			log.Warn().Err(err).Msg("invalid token")
+			return nil, ErrInvalidToken
+		}
 	}
 
 	if !token.Valid {
+		log.Warn().Msg("invalid token")
 		return nil, ErrInvalidToken
 	}
 	return claims, nil
 }
 
-func ExtractToken(ctx context.Context) (*Claims, error) {
-	md, ok := metadata.FromIncomingContext(ctx)
-	if !ok {
-		return nil, ErrMissingToken
-	}
-
-	values := md.Get("authorization")
-	if len(values) == 0 {
-		return nil, ErrMissingToken
-	}
-
-	return nil, ErrMissingToken
-}
-
+// ErrMissingToken is kept for callers that extract tokens before validation.
 func ExtractTokenFromString(header string) string {
 	if strings.HasPrefix(header, "Bearer ") {
 		return strings.TrimPrefix(header, "Bearer ")

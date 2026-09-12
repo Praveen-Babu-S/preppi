@@ -2,9 +2,9 @@ package repository
 
 import (
 	"context"
-	"fmt"
 	"strings"
 
+	"github.com/rs/zerolog/log"
 	"gorm.io/gorm"
 )
 
@@ -65,7 +65,8 @@ func (r *repository) SearchArticles(ctx context.Context, query, subject string, 
 	var articles []Article
 	err := q.Order("upvotes DESC, created_at DESC").Limit(limit).Offset(offset).Find(&articles).Error
 	if err != nil {
-		return nil, fmt.Errorf("kb_repo_search: %w", err)
+		log.Error().Err(err).Str("query", query).Str("subject", subject).Msg("unable to search articles")
+		return nil, err
 	}
 	return articles, nil
 }
@@ -73,7 +74,12 @@ func (r *repository) SearchArticles(ctx context.Context, query, subject string, 
 func (r *repository) GetArticle(ctx context.Context, id uint) (*Article, error) {
 	var a Article
 	if err := r.db.WithContext(ctx).First(&a, id).Error; err != nil {
-		return nil, fmt.Errorf("kb_repo_get_article: %w", err)
+		if err == gorm.ErrRecordNotFound {
+			log.Info().Uint("id", id).Msg("article not found")
+		} else {
+			log.Error().Err(err).Uint("id", id).Msg("unable to find article")
+		}
+		return nil, err
 	}
 	return &a, nil
 }
@@ -88,7 +94,8 @@ func (r *repository) GetRelatedTopics(ctx context.Context, topic, subject string
 	}
 	err := q.Order("article_count DESC").Limit(10).Find(&topics).Error
 	if err != nil {
-		return nil, fmt.Errorf("kb_repo_get_related_topics: %w", err)
+		log.Error().Err(err).Str("topic", topic).Str("subject", subject).Msg("unable to get related topics")
+		return nil, err
 	}
 	return topics, nil
 }
@@ -99,13 +106,17 @@ func (r *repository) SuggestKeywords(ctx context.Context, query string) ([]strin
 		Where("title ILIKE ?", "%"+query+"%").
 		Limit(10).Pluck("title", &titles).Error
 	if err != nil {
-		return nil, fmt.Errorf("kb_repo_suggest_keywords: %w", err)
+		log.Error().Err(err).Str("query", query).Msg("unable to suggest keywords")
+		return nil, err
 	}
 	return titles, nil
 }
 
 func (r *repository) IncrementUpvotes(ctx context.Context, id uint) error {
-	return fmt.Errorf("kb_repo_increment_upvotes: %w",
-		r.db.WithContext(ctx).Model(&Article{}).Where("id = ?", id).
-			Update("upvotes", gorm.Expr("upvotes + 1")).Error)
+	err := r.db.WithContext(ctx).Model(&Article{}).Where("id = ?", id).
+		Update("upvotes", gorm.Expr("upvotes + 1")).Error
+	if err != nil {
+		log.Error().Err(err).Uint("id", id).Msg("unable to increment article upvotes")
+	}
+	return err
 }

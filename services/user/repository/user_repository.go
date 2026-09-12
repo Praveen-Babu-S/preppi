@@ -2,8 +2,8 @@ package repository
 
 import (
 	"context"
-	"fmt"
 
+	"github.com/rs/zerolog/log"
 	"gorm.io/gorm"
 )
 
@@ -56,17 +56,30 @@ func New(db *gorm.DB) Repository {
 }
 
 func (r *repository) CreateProfile(ctx context.Context, p *Profile) error {
-	return fmt.Errorf("user_repo_create_profile: %w", r.db.WithContext(ctx).Create(p).Error)
+	err := r.db.WithContext(ctx).Create(p).Error
+	if err != nil {
+		log.Error().Err(err).Uint("user_id", p.UserID).Msg("unable to create profile")
+	}
+	return err
 }
 
 func (r *repository) UpsertMentorProfile(ctx context.Context, m *MentorProfile) error {
-	return fmt.Errorf("user_repo_upsert_mentor: %w", r.db.WithContext(ctx).Save(m).Error)
+	err := r.db.WithContext(ctx).Save(m).Error
+	if err != nil {
+		log.Error().Err(err).Uint("user_id", m.UserID).Msg("unable to upsert mentor profile")
+	}
+	return err
 }
 
 func (r *repository) GetProfile(ctx context.Context, userID uint) (*Profile, error) {
 	var p Profile
 	if err := r.db.WithContext(ctx).Where("user_id = ?", userID).First(&p).Error; err != nil {
-		return nil, fmt.Errorf("user_repo_get_profile: %w", err)
+		if err == gorm.ErrRecordNotFound {
+			log.Info().Uint("user_id", userID).Msg("profile not found")
+		} else {
+			log.Error().Err(err).Uint("user_id", userID).Msg("unable to find profile")
+		}
+		return nil, err
 	}
 	return &p, nil
 }
@@ -74,13 +87,22 @@ func (r *repository) GetProfile(ctx context.Context, userID uint) (*Profile, err
 func (r *repository) GetMentorProfile(ctx context.Context, userID uint) (*MentorProfile, error) {
 	var m MentorProfile
 	if err := r.db.WithContext(ctx).Where("user_id = ?", userID).First(&m).Error; err != nil {
-		return nil, fmt.Errorf("user_repo_get_mentor: %w", err)
+		if err == gorm.ErrRecordNotFound {
+			log.Info().Uint("user_id", userID).Msg("mentor profile not found")
+		} else {
+			log.Error().Err(err).Uint("user_id", userID).Msg("unable to find mentor profile")
+		}
+		return nil, err
 	}
 	return &m, nil
 }
 
 func (r *repository) UpdateProfile(ctx context.Context, p *Profile) error {
-	return fmt.Errorf("user_repo_update_profile: %w", r.db.WithContext(ctx).Save(p).Error)
+	err := r.db.WithContext(ctx).Save(p).Error
+	if err != nil {
+		log.Error().Err(err).Uint("user_id", p.UserID).Msg("unable to update profile")
+	}
+	return err
 }
 
 func (r *repository) GetMentorsBySubject(ctx context.Context, subject string, limit, offset int) ([]MentorProfile, error) {
@@ -89,19 +111,26 @@ func (r *repository) GetMentorsBySubject(ctx context.Context, subject string, li
 		Where("expertise_subjects LIKE ? AND verification_status = ?", "%"+subject+"%", "approved").
 		Limit(limit).Offset(offset).Find(&mentors).Error
 	if err != nil {
-		return nil, fmt.Errorf("user_repo_get_mentors_by_subject: %w", err)
+		log.Error().Err(err).Str("subject", subject).Msg("unable to find mentors by subject")
+		return nil, err
 	}
 	return mentors, nil
 }
 
 func (r *repository) SetOnline(ctx context.Context, userID uint, online bool) error {
-	return fmt.Errorf("user_repo_set_online: %w",
-		r.db.WithContext(ctx).Model(&Profile{}).Where("user_id = ?", userID).Update("online", online).Error)
+	err := r.db.WithContext(ctx).Model(&Profile{}).Where("user_id = ?", userID).Update("online", online).Error
+	if err != nil {
+		log.Error().Err(err).Uint("user_id", userID).Bool("online", online).Msg("unable to update online status")
+	}
+	return err
 }
 
 func (r *repository) ApproveMentor(ctx context.Context, userID uint, status string) error {
-	return fmt.Errorf("user_repo_approve_mentor: %w",
-		r.db.WithContext(ctx).Model(&MentorProfile{}).Where("user_id = ?", userID).Update("verification_status", status).Error)
+	err := r.db.WithContext(ctx).Model(&MentorProfile{}).Where("user_id = ?", userID).Update("verification_status", status).Error
+	if err != nil {
+		log.Error().Err(err).Uint("user_id", userID).Str("status", status).Msg("unable to approve mentor")
+	}
+	return err
 }
 
 func (r *repository) GetPendingMentors(ctx context.Context, limit, offset int) ([]MentorProfile, error) {
@@ -110,7 +139,8 @@ func (r *repository) GetPendingMentors(ctx context.Context, limit, offset int) (
 		Where("verification_status = ?", "pending").
 		Limit(limit).Offset(offset).Find(&mentors).Error
 	if err != nil {
-		return nil, fmt.Errorf("user_repo_get_pending_mentors: %w", err)
+		log.Error().Err(err).Msg("unable to list pending mentors")
+		return nil, err
 	}
 	return mentors, nil
 }

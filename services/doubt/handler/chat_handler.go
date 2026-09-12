@@ -6,6 +6,7 @@ import (
 	"io"
 	"strconv"
 
+	"github.com/rs/zerolog/log"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -40,6 +41,7 @@ func (h *ChatHandler) CreateRoom(ctx context.Context, req *pb.CreateRoomRequest)
 	}
 	room, err := h.svc.CreateRoom(ctx, questionID, studentID, mentorID)
 	if err != nil {
+		log.Error().Err(err).Uint("question_id", questionID).Msg("failed to create room")
 		return nil, status.Error(codes.Internal, "failed to create room")
 	}
 	return &pb.CreateRoomResponse{
@@ -55,6 +57,7 @@ func (h *ChatHandler) GetRoom(ctx context.Context, req *pb.GetRoomRequest) (*pb.
 	}
 	room, err := h.svc.GetRoom(ctx, id)
 	if err != nil {
+		log.Error().Err(err).Uint("id", id).Msg("room not found")
 		return nil, status.Error(codes.NotFound, "room not found")
 	}
 	return roomToPB(room), nil
@@ -71,6 +74,7 @@ func (h *ChatHandler) GetHistory(ctx context.Context, req *pb.GetHistoryRequest)
 	}
 	messages, err := h.svc.GetHistory(ctx, roomID, limit, 0)
 	if err != nil {
+		log.Error().Err(err).Uint("room_id", roomID).Msg("failed to get history")
 		return nil, status.Error(codes.Internal, "failed to get history")
 	}
 	resp := &pb.GetHistoryResponse{}
@@ -101,8 +105,10 @@ func (h *ChatHandler) SendMessage(stream grpc.BidiStreamingServer[pb.SendMessage
 		msg, err := h.svc.SendMessage(stream.Context(), roomID, senderID, req.GetContent(), msgType, req.GetImageUrl())
 		if err != nil {
 			if errors.Is(err, service.ErrValidation) {
+				log.Warn().Err(err).Uint("room_id", roomID).Msg("invalid message payload")
 				return status.Error(codes.InvalidArgument, "content or image_url required")
 			}
+			log.Error().Err(err).Uint("room_id", roomID).Uint("sender_id", senderID).Msg("failed to send message")
 			return status.Error(codes.Internal, "failed to send message")
 		}
 		resp := &pb.SendMessageResponse{
@@ -150,6 +156,7 @@ func (h *ChatHandler) ChatMarkRead(ctx context.Context, req *pb.ChatMarkReadRequ
 	}
 	count, err := h.svc.MarkChatRead(ctx, roomID, userID)
 	if err != nil {
+		log.Error().Err(err).Uint("room_id", roomID).Uint("user_id", userID).Msg("failed to mark read")
 		return nil, status.Error(codes.Internal, "failed to mark read")
 	}
 	return &pb.ChatMarkReadResponse{UnreadCount: int32(count)}, nil

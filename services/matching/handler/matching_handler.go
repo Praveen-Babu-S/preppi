@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/rs/zerolog/log"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -64,8 +65,10 @@ func (h *MatchingHandler) SkipQuestion(ctx context.Context, req *pb.SkipQuestion
 	needReassign, err := h.svc.SkipQuestion(ctx, assignmentID, req.GetReason())
 	if err != nil {
 		if errors.Is(err, service.ErrAssignmentNotFound) {
+			log.Info().Uint("assignment_id", assignmentID).Msg("assignment not found for skip")
 			return nil, status.Error(codes.NotFound, "assignment not found")
 		}
+		log.Error().Err(err).Uint("assignment_id", assignmentID).Msg("skip failed")
 		return nil, status.Error(codes.Internal, "skip failed")
 	}
 
@@ -84,8 +87,10 @@ func (h *MatchingHandler) GetNextQuestion(ctx context.Context, req *pb.GetNextQu
 	assignmentID, questionID, err := h.svc.GetNextQuestion(ctx, mentorID)
 	if err != nil {
 		if errors.Is(err, service.ErrNoCandidates) {
+			log.Info().Uint("mentor_id", mentorID).Msg("no pending questions")
 			return nil, status.Error(codes.NotFound, "no pending questions")
 		}
+		log.Error().Err(err).Uint("mentor_id", mentorID).Msg("failed to get next question")
 		return nil, status.Error(codes.Internal, "failed to get next question")
 	}
 	_ = assignmentID
@@ -108,8 +113,10 @@ func (h *MatchingHandler) EscalateQuestion(ctx context.Context, req *pb.Escalate
 	level, err := h.svc.EscalateQuestion(ctx, questionID, req.GetReason())
 	if err != nil {
 		if errors.Is(err, service.ErrMaxEscalation) {
+			log.Warn().Err(err).Uint("question_id", questionID).Msg("max escalation level reached")
 			return nil, status.Error(codes.FailedPrecondition, "max escalation level reached")
 		}
+		log.Error().Err(err).Uint("question_id", questionID).Msg("escalation failed")
 		return nil, status.Error(codes.Internal, "escalation failed")
 	}
 

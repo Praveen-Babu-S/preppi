@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strconv"
 	"strings"
 
@@ -35,7 +36,7 @@ func (s *UserService) CreateProfile(ctx context.Context, userID uint, name, avat
 		Role:      role,
 	}
 	if err := s.repo.CreateProfile(ctx, p); err != nil {
-		return err
+		return fmt.Errorf("user_service_create_profile: %w", err)
 	}
 
 	if role == "mentor" {
@@ -46,18 +47,26 @@ func (s *UserService) CreateProfile(ctx context.Context, userID uint, name, avat
 			VerificationStatus: "pending",
 		}
 		if err := s.repo.UpsertMentorProfile(ctx, m); err != nil {
-			return err
+			return fmt.Errorf("user_service_create_mentor_profile: %w", err)
 		}
 	}
 	return nil
 }
 
 func (s *UserService) GetProfile(ctx context.Context, userID uint) (*repository.Profile, error) {
-	return s.repo.GetProfile(ctx, userID)
+	p, err := s.repo.GetProfile(ctx, userID)
+	if err != nil {
+		return nil, fmt.Errorf("user_service_get_profile: %w", err)
+	}
+	return p, nil
 }
 
 func (s *UserService) GetMentorProfile(ctx context.Context, userID uint) (*repository.MentorProfile, error) {
-	return s.repo.GetMentorProfile(ctx, userID)
+	m, err := s.repo.GetMentorProfile(ctx, userID)
+	if err != nil {
+		return nil, fmt.Errorf("user_service_get_mentor_profile: %w", err)
+	}
+	return m, nil
 }
 
 func (s *UserService) UpdateProfile(ctx context.Context, userID uint, name, avatarURL, bio, school, college string) error {
@@ -80,7 +89,10 @@ func (s *UserService) UpdateProfile(ctx context.Context, userID uint, name, avat
 	if college != "" {
 		p.College = college
 	}
-	return s.repo.UpdateProfile(ctx, p)
+	if err := s.repo.UpdateProfile(ctx, p); err != nil {
+		return fmt.Errorf("user_service_update_profile: %w", err)
+	}
+	return nil
 }
 
 func (s *UserService) UpdateMentorProfile(ctx context.Context, userID uint, expertise, subTopics []string, bio string) error {
@@ -93,18 +105,30 @@ func (s *UserService) UpdateMentorProfile(ctx context.Context, userID uint, expe
 	if bio != "" {
 		if p, perr := s.repo.GetProfile(ctx, userID); perr == nil {
 			p.Bio = bio
-			_ = s.repo.UpdateProfile(ctx, p)
+			if err := s.repo.UpdateProfile(ctx, p); err != nil {
+				return fmt.Errorf("user_service_update_profile_bio: %w", err)
+			}
 		}
 	}
-	return s.repo.UpsertMentorProfile(ctx, m)
+	if err := s.repo.UpsertMentorProfile(ctx, m); err != nil {
+		return fmt.Errorf("user_service_update_mentor_profile: %w", err)
+	}
+	return nil
 }
 
 func (s *UserService) GetMentorsBySubject(ctx context.Context, subject string, limit, offset int) ([]repository.MentorProfile, error) {
-	return s.repo.GetMentorsBySubject(ctx, subject, limit, offset)
+	mentors, err := s.repo.GetMentorsBySubject(ctx, subject, limit, offset)
+	if err != nil {
+		return nil, fmt.Errorf("user_service_get_mentors_by_subject: %w", err)
+	}
+	return mentors, nil
 }
 
 func (s *UserService) SetOnline(ctx context.Context, userID uint, online bool) error {
-	return s.repo.SetOnline(ctx, userID, online)
+	if err := s.repo.SetOnline(ctx, userID, online); err != nil {
+		return fmt.Errorf("user_service_set_online: %w", err)
+	}
+	return nil
 }
 
 func (s *UserService) ApproveMentor(ctx context.Context, userID uint, approved bool) error {
@@ -112,11 +136,18 @@ func (s *UserService) ApproveMentor(ctx context.Context, userID uint, approved b
 	if !approved {
 		status = "rejected"
 	}
-	return s.repo.ApproveMentor(ctx, userID, status)
+	if err := s.repo.ApproveMentor(ctx, userID, status); err != nil {
+		return fmt.Errorf("user_service_approve_mentor: %w", err)
+	}
+	return nil
 }
 
 func (s *UserService) GetPendingMentors(ctx context.Context, limit, offset int) ([]repository.MentorProfile, error) {
-	return s.repo.GetPendingMentors(ctx, limit, offset)
+	mentors, err := s.repo.GetPendingMentors(ctx, limit, offset)
+	if err != nil {
+		return nil, fmt.Errorf("user_service_get_pending_mentors: %w", err)
+	}
+	return mentors, nil
 }
 
 func SplitCSV(s string) []string {
