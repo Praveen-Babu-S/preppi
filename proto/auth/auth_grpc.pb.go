@@ -2,9 +2,9 @@
 // versions:
 // - protoc-gen-go-grpc v1.6.2
 // - protoc             (unknown)
-// source: auth/v1/auth.proto
+// source: auth/auth.proto
 
-package v1
+package auth
 
 import (
 	context "context"
@@ -19,11 +19,11 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	AuthService_Register_FullMethodName     = "/auth.v1.AuthService/Register"
-	AuthService_Login_FullMethodName        = "/auth.v1.AuthService/Login"
-	AuthService_RefreshToken_FullMethodName = "/auth.v1.AuthService/RefreshToken"
-	AuthService_Logout_FullMethodName       = "/auth.v1.AuthService/Logout"
-	AuthService_VerifyEmail_FullMethodName  = "/auth.v1.AuthService/VerifyEmail"
+	AuthService_Register_FullMethodName     = "/auth.AuthService/Register"
+	AuthService_Login_FullMethodName        = "/auth.AuthService/Login"
+	AuthService_RefreshToken_FullMethodName = "/auth.AuthService/RefreshToken"
+	AuthService_Logout_FullMethodName       = "/auth.AuthService/Logout"
+	AuthService_VerifyEmail_FullMethodName  = "/auth.AuthService/VerifyEmail"
 )
 
 // AuthServiceClient is the client API for AuthService service.
@@ -242,7 +242,7 @@ func _AuthService_VerifyEmail_Handler(srv interface{}, ctx context.Context, dec 
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var AuthService_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "auth.v1.AuthService",
+	ServiceName: "auth.AuthService",
 	HandlerType: (*AuthServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
@@ -267,5 +267,5 @@ var AuthService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "auth/v1/auth.proto",
+	Metadata: "auth/auth.proto",
 }

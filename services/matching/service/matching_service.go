@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	"preppi.com/services/matching/repository"
@@ -48,7 +49,7 @@ func (s *MatchingService) AssignMentor(ctx context.Context, questionID uint, can
 		Status:     "pending",
 	}
 	if err := s.repo.CreateAssignment(ctx, assignment); err != nil {
-		return 0, 0, err
+		return 0, 0, fmt.Errorf("matching_service_create_assignment: %w", err)
 	}
 	return assignment.ID, mentorID, nil
 }
@@ -61,7 +62,7 @@ func (s *MatchingService) SkipQuestion(ctx context.Context, assignmentID uint, r
 	}
 
 	if err := s.repo.UpdateAssignmentStatus(ctx, assignmentID, "skipped", time.Now()); err != nil {
-		return false, err
+		return false, fmt.Errorf("matching_service_skip_question: %w", err)
 	}
 
 	// Reassign: try to find another candidate for this question
@@ -75,7 +76,7 @@ func (s *MatchingService) SkipQuestion(ctx context.Context, assignmentID uint, r
 func (s *MatchingService) GetNextQuestion(ctx context.Context, mentorID uint) (uint, uint, error) {
 	assignments, err := s.repo.GetPendingForMentor(ctx, mentorID, 1, 0)
 	if err != nil {
-		return 0, 0, err
+		return 0, 0, fmt.Errorf("matching_service_get_next_question: %w", err)
 	}
 	if len(assignments) == 0 {
 		return 0, 0, ErrNoCandidates
@@ -85,13 +86,23 @@ func (s *MatchingService) GetNextQuestion(ctx context.Context, mentorID uint) (u
 
 // CompleteAssignment marks an assignment as completed when a mentor provides a solution.
 func (s *MatchingService) CompleteAssignment(ctx context.Context, assignmentID uint) error {
-	return s.repo.UpdateAssignmentStatus(ctx, assignmentID, "completed", time.Now())
+	if err := s.repo.UpdateAssignmentStatus(ctx, assignmentID, "completed", time.Now()); err != nil {
+		return fmt.Errorf("matching_service_complete_assignment: %w", err)
+	}
+	return nil
 }
 
 // EscalateQuestion bumps the escalation level for a question.
 func (s *MatchingService) EscalateQuestion(ctx context.Context, questionID uint, reason string) (int, error) {
-	latest, _ := s.repo.GetLatestEscalation(ctx, questionID)
-	newLevel := latest.EscalationLevel + 1
+	currentLevel := 0
+	latest, err := s.repo.GetLatestEscalation(ctx, questionID)
+	if err != nil {
+		return 0, fmt.Errorf("matching_service_get_escalation: %w", err)
+	}
+	if latest != nil {
+		currentLevel = latest.EscalationLevel
+	}
+	newLevel := currentLevel + 1
 	if newLevel > MaxEscalationLevel {
 		return 0, ErrMaxEscalation
 	}
@@ -102,7 +113,7 @@ func (s *MatchingService) EscalateQuestion(ctx context.Context, questionID uint,
 		Reason:          reason,
 	}
 	if err := s.repo.CreateEscalation(ctx, esc); err != nil {
-		return 0, err
+		return 0, fmt.Errorf("matching_service_create_escalation: %w", err)
 	}
 	return newLevel, nil
 }

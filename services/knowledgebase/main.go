@@ -22,6 +22,7 @@ import (
 func main() {
 	cfg := config.Load("knowledgebase")
 	log := logger.New(cfg.LogLevel)
+	log.Info().Str("service", "knowledgebase").Int("port", cfg.GRPCPort).Str("logLevel", cfg.LogLevel).Msg("starting service")
 
 	db, err := database.Connect(cfg)
 	if err != nil {

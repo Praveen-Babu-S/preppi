@@ -2,9 +2,9 @@ package repository
 
 import (
 	"context"
-	"fmt"
 	"time"
 
+	"github.com/rs/zerolog/log"
 	"gorm.io/gorm"
 )
 
@@ -74,7 +74,8 @@ func (r *repository) GetLeaderboard(ctx context.Context, since time.Time, limit 
 		LIMIT ?
 	`, since, limit).Scan(&rows).Error
 	if err != nil {
-		return nil, fmt.Errorf("analytics_repo_leaderboard: %w", err)
+		log.Error().Err(err).Time("since", since).Msg("unable to build leaderboard")
+		return nil, err
 	}
 	result := make([]MentorStat, len(rows))
 	for i, row := range rows {
@@ -98,7 +99,8 @@ func (r *repository) GetStudentStats(ctx context.Context, studentID uint, since 
 		WHERE student_id = ? AND created_at >= ?
 	`, studentID, since).Scan(&stat).Error
 	if err != nil {
-		return nil, fmt.Errorf("analytics_repo_student_stats: %w", err)
+		log.Error().Err(err).Uint("student_id", studentID).Msg("unable to compute student questions asked")
+		return nil, err
 	}
 
 	err = r.db.WithContext(ctx).Raw(`
@@ -108,7 +110,8 @@ func (r *repository) GetStudentStats(ctx context.Context, studentID uint, since 
 		WHERE q.student_id = ? AND s.is_accepted = TRUE AND q.created_at >= ?
 	`, studentID, since).Scan(&stat.QuestionsAnswered).Error
 	if err != nil {
-		return nil, fmt.Errorf("analytics_repo_student_answered: %w", err)
+		log.Error().Err(err).Uint("student_id", studentID).Msg("unable to compute student questions answered")
+		return nil, err
 	}
 
 	return &stat, nil
@@ -127,7 +130,8 @@ func (r *repository) GetMentorStats(ctx context.Context, mentorID uint, since ti
 		WHERE s.mentor_id = ? AND s.created_at >= ?
 	`, mentorID, since).Scan(&stat).Error
 	if err != nil {
-		return nil, fmt.Errorf("analytics_repo_mentor_stats: %w", err)
+		log.Error().Err(err).Uint("mentor_id", mentorID).Msg("unable to compute mentor stats")
+		return nil, err
 	}
 	return &stat, nil
 }
@@ -135,36 +139,48 @@ func (r *repository) GetMentorStats(ctx context.Context, mentorID uint, since ti
 func (r *repository) GetPlatformMetrics(ctx context.Context, since time.Time) (*PlatformMetrics, error) {
 	var m PlatformMetrics
 
-	r.db.WithContext(ctx).Raw(`
+	if err := r.db.WithContext(ctx).Raw(`
 		SELECT COUNT(DISTINCT student_id)::int FROM questions WHERE created_at >= ?
-	`, since).Scan(&m.ActiveStudents)
+	`, since).Scan(&m.ActiveStudents).Error; err != nil {
+		log.Error().Err(err).Msg("unable to compute active students")
+	}
 
-	r.db.WithContext(ctx).Raw(`
+	if err := r.db.WithContext(ctx).Raw(`
 		SELECT COUNT(DISTINCT mentor_id)::int FROM solutions WHERE created_at >= ?
-	`, since).Scan(&m.ActiveMentors)
+	`, since).Scan(&m.ActiveMentors).Error; err != nil {
+		log.Error().Err(err).Msg("unable to compute active mentors")
+	}
 
-	r.db.WithContext(ctx).Raw(`
+	if err := r.db.WithContext(ctx).Raw(`
 		SELECT COUNT(*)::int FROM questions WHERE created_at >= ?
-	`, since).Scan(&m.TotalQuestions)
+	`, since).Scan(&m.TotalQuestions).Error; err != nil {
+		log.Error().Err(err).Msg("unable to compute total questions")
+	}
 
-	r.db.WithContext(ctx).Raw(`
+	if err := r.db.WithContext(ctx).Raw(`
 		SELECT COUNT(*)::int FROM questions WHERE status = 'open' AND created_at >= ?
-	`, since).Scan(&m.PendingQuestions)
+	`, since).Scan(&m.PendingQuestions).Error; err != nil {
+		log.Error().Err(err).Msg("unable to compute pending questions")
+	}
 
-	r.db.WithContext(ctx).Raw(`
+	if err := r.db.WithContext(ctx).Raw(`
 		SELECT COALESCE(AVG(EXTRACT(EPOCH FROM (q.updated_at - q.created_at))) / 3600, 0)
 		FROM questions q
 		WHERE q.status IN ('answered', 'assigned') AND q.created_at >= ?
-	`, since).Scan(&m.AvgResponseHours)
+	`, since).Scan(&m.AvgResponseHours).Error; err != nil {
+		log.Error().Err(err).Msg("unable to compute avg response hours")
+	}
 
-	r.db.WithContext(ctx).Raw(`
+	if err := r.db.WithContext(ctx).Raw(`
 		SELECT CASE
 			WHEN COUNT(*) = 0 THEN 0
 			ELSE COUNT(DISTINCT CASE WHEN q.status = 'answered' THEN q.id END)::float / COUNT(*)::float
 		END
 		FROM questions q
 		WHERE q.created_at >= ?
-	`, since).Scan(&m.ResolutionRate)
+	`, since).Scan(&m.ResolutionRate).Error; err != nil {
+		log.Error().Err(err).Msg("unable to compute resolution rate")
+	}
 
 	return &m, nil
 }

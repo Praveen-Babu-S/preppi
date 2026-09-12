@@ -6,7 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"google.golang.org/grpc"
 
-	pb "preppi.com/proto/auth/v1"
+	pb "preppi.com/proto/auth"
 )
 
 type AuthHandler struct {

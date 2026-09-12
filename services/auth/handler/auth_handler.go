@@ -4,11 +4,12 @@ import (
 	"context"
 	"errors"
 
+	"github.com/rs/zerolog/log"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	pb "preppi.com/proto/auth/v1"
+	pb "preppi.com/proto/auth"
 	"preppi.com/services/auth/service"
 )
 
@@ -41,9 +42,11 @@ func (h *AuthHandler) Register(ctx context.Context, req *pb.RegisterRequest) (*p
 	id, email, err := h.svc.Register(ctx, req.GetName(), req.GetEmail(), req.GetPassword(), role, req.GetSubject())
 	if err != nil {
 		if errors.Is(err, service.ErrUserExists) {
-			return nil, status.Error(codes.AlreadyExists, "user already exists")
+			log.Warn().Err(err).Msg("user already exists")
+			return nil, err
 		}
-		return nil, status.Error(codes.Internal, "failed to register user")
+		log.Error().Err(err).Msg("failed to register user")
+		return nil, err
 	}
 
 	return &pb.RegisterResponse{UserId: uint64ToStr(id), Email: email}, nil

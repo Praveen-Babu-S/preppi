@@ -2,21 +2,18 @@ package repository
 
 import (
 	"context"
-	"fmt"
 
+	"github.com/rs/zerolog/log"
 	"gorm.io/gorm"
 )
 
 type User struct {
-	ID            uint   `gorm:"primaryKey"`
+	gorm.Model
 	Email         string `gorm:"uniqueIndex;size:255;not null"`
 	PasswordHash  string `gorm:"size:255;not null"`
 	Role          string `gorm:"size:20;not null"`
 	Subject       string `gorm:"size:100"`
 	EmailVerified bool   `gorm:"default:false"`
-	CreatedAt     int64  `gorm:"autoCreateTime"`
-	UpdatedAt     int64  `gorm:"autoUpdateTime"`
-	DeletedAt     gorm.DeletedAt
 }
 
 type Repository interface {
@@ -36,13 +33,22 @@ func New(db *gorm.DB) Repository {
 }
 
 func (r *repository) Create(ctx context.Context, u *User) error {
-	return fmt.Errorf("auth_repository_create: %w", r.db.WithContext(ctx).Create(u).Error)
+	err := r.db.WithContext(ctx).Create(u).Error
+	if err != nil {
+		log.Error().Err(err).Msg("failed to create user")
+	}
+	return err
 }
 
 func (r *repository) FindByEmail(ctx context.Context, email string) (*User, error) {
 	var u User
 	if err := r.db.WithContext(ctx).Where("email = ?", email).First(&u).Error; err != nil {
-		return nil, fmt.Errorf("auth_repository_find_by_email: %w", err)
+		if err == gorm.ErrRecordNotFound {
+			log.Info().Str("email", email).Msg("user not found")
+		} else {
+			log.Error().Err(err).Str("email", email).Msg("unable to find user with email")
+		}
+		return nil, err
 	}
 	return &u, nil
 }
@@ -50,16 +56,24 @@ func (r *repository) FindByEmail(ctx context.Context, email string) (*User, erro
 func (r *repository) FindByID(ctx context.Context, id uint) (*User, error) {
 	var u User
 	if err := r.db.WithContext(ctx).First(&u, id).Error; err != nil {
-		return nil, fmt.Errorf("auth_repository_find_by_id: %w", err)
+		log.Error().Err(err).Uint("id", id).Msg("unable to find user with id")
+		return nil, err
 	}
 	return &u, nil
 }
 
 func (r *repository) Update(ctx context.Context, u *User) error {
-	return fmt.Errorf("auth_repository_update: %w", r.db.WithContext(ctx).Save(u).Error)
+	if err := r.db.WithContext(ctx).Save(u).Error; err != nil {
+		log.Error().Err(err).Uint("id", u.ID).Msg("unable to save user")
+		return err
+	}
+	return nil
 }
 
 func (r *repository) MarkEmailVerified(ctx context.Context, id uint) error {
-	return fmt.Errorf("auth_repository_mark_email_verified: %w",
-		r.db.WithContext(ctx).Model(&User{}).Where("id = ?", id).Update("email_verified", true).Error)
+	if err := r.db.WithContext(ctx).Model(&User{}).Where("id = ?", id).Update("email_verified", true).Error; err != nil {
+		log.Error().Err(err).Uint("id", id).Msg("unable to mark user verified")
+		return err
+	}
+	return nil
 }

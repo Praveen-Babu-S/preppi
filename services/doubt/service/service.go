@@ -46,28 +46,43 @@ func (s *DoubtService) CreateQuestion(ctx context.Context, studentID uint, subje
 		Status:      "open",
 	}
 	if err := s.repo.CreateQuestion(ctx, q); err != nil {
-		return 0, "", err
+		return 0, "", fmt.Errorf("doubt_service_create_question: %w", err)
 	}
 	return q.ID, q.Status, nil
 }
 
 func (s *DoubtService) GetQuestion(ctx context.Context, id uint) (*repository.Question, error) {
-	return s.repo.FindQuestionByID(ctx, id)
+	q, err := s.repo.FindQuestionByID(ctx, id)
+	if err != nil {
+		return nil, fmt.Errorf("doubt_service_get_question: %w", err)
+	}
+	return q, nil
 }
 
 func (s *DoubtService) ListQuestionsByStudent(ctx context.Context, studentID uint, limit, offset int) ([]repository.Question, error) {
-	return s.repo.ListQuestions(ctx, repository.Filter{StudentID: studentID, Limit: limit, Offset: offset})
+	questions, err := s.repo.ListQuestions(ctx, repository.Filter{StudentID: studentID, Limit: limit, Offset: offset})
+	if err != nil {
+		return nil, fmt.Errorf("doubt_service_list_questions: %w", err)
+	}
+	return questions, nil
 }
 
 func (s *DoubtService) SearchQuestions(ctx context.Context, query, subject string, limit, offset int) ([]repository.Question, error) {
-	return s.repo.SearchQuestions(ctx, query, subject, limit, offset)
+	questions, err := s.repo.SearchQuestions(ctx, query, subject, limit, offset)
+	if err != nil {
+		return nil, fmt.Errorf("doubt_service_search_questions: %w", err)
+	}
+	return questions, nil
 }
 
 func (s *DoubtService) UpdateQuestionStatus(ctx context.Context, id uint, status string) error {
 	if !validStatus(status) {
 		return fmt.Errorf("invalid status %q", status)
 	}
-	return s.repo.UpdateQuestionFields(ctx, id, map[string]any{"status": status})
+	if err := s.repo.UpdateQuestionFields(ctx, id, map[string]any{"status": status}); err != nil {
+		return fmt.Errorf("doubt_service_update_question_status: %w", err)
+	}
+	return nil
 }
 
 func (s *DoubtService) UpdateQuestion(ctx context.Context, id uint, fields map[string]any) error {
@@ -86,14 +101,20 @@ func (s *DoubtService) UpdateQuestion(ctx context.Context, id uint, fields map[s
 			}
 		}
 	}
-	return s.repo.UpdateQuestionFields(ctx, id, fields)
+	if err := s.repo.UpdateQuestionFields(ctx, id, fields); err != nil {
+		return fmt.Errorf("doubt_service_update_question: %w", err)
+	}
+	return nil
 }
 
 func (s *DoubtService) Assign(ctx context.Context, id uint, mentorID uint) error {
-	return s.repo.UpdateQuestionFields(ctx, id, map[string]any{
+	if err := s.repo.UpdateQuestionFields(ctx, id, map[string]any{
 		"assignee_id": mentorID,
 		"status":      "assigned",
-	})
+	}); err != nil {
+		return fmt.Errorf("doubt_service_assign: %w", err)
+	}
+	return nil
 }
 
 // ── Solution ────────────────────────────────
@@ -115,11 +136,19 @@ func (s *DoubtService) CreateSolution(ctx context.Context, questionID, mentorID 
 }
 
 func (s *DoubtService) GetSolution(ctx context.Context, id uint) (*repository.Solution, error) {
-	return s.repo.FindSolutionByID(ctx, id)
+	sol, err := s.repo.FindSolutionByID(ctx, id)
+	if err != nil {
+		return nil, fmt.Errorf("doubt_service_get_solution: %w", err)
+	}
+	return sol, nil
 }
 
 func (s *DoubtService) ListSolutionsByQuestion(ctx context.Context, questionID uint, limit, offset int) ([]repository.Solution, error) {
-	return s.repo.ListSolutionsByQuestion(ctx, questionID, limit, offset)
+	solutions, err := s.repo.ListSolutionsByQuestion(ctx, questionID, limit, offset)
+	if err != nil {
+		return nil, fmt.Errorf("doubt_service_list_solutions: %w", err)
+	}
+	return solutions, nil
 }
 
 func (s *DoubtService) Vote(ctx context.Context, id uint, isUpvote bool) (int, int, error) {
@@ -133,7 +162,7 @@ func (s *DoubtService) Vote(ctx context.Context, id uint, isUpvote bool) (int, i
 		sol.Downvotes++
 	}
 	if err := s.repo.UpdateSolutionVotes(ctx, id, sol.Upvotes, sol.Downvotes); err != nil {
-		return 0, 0, err
+		return 0, 0, fmt.Errorf("doubt_service_vote: %w", err)
 	}
 	return sol.Upvotes, sol.Downvotes, nil
 }
@@ -144,10 +173,10 @@ func (s *DoubtService) Accept(ctx context.Context, id uint) (bool, error) {
 		return false, ErrSolutionNotFound
 	}
 	if err := s.repo.UnacceptOtherSolutions(ctx, sol.QuestionID); err != nil {
-		return false, err
+		return false, fmt.Errorf("doubt_service_unaccept_others: %w", err)
 	}
 	if err := s.repo.AcceptSolution(ctx, id); err != nil {
-		return false, err
+		return false, fmt.Errorf("doubt_service_accept_solution: %w", err)
 	}
 	return true, nil
 }
@@ -163,13 +192,17 @@ func (s *DoubtService) CreateFollowUp(ctx context.Context, solutionID, userID ui
 		ImageURLs:  strings.Join(imageURLs, ","),
 	}
 	if err := s.repo.CreateFollowUp(ctx, fu); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("doubt_service_create_follow_up: %w", err)
 	}
 	return fu, nil
 }
 
 func (s *DoubtService) ListFollowUps(ctx context.Context, solutionID uint, limit, offset int) ([]repository.FollowUp, error) {
-	return s.repo.ListFollowUps(ctx, solutionID, limit, offset)
+	followUps, err := s.repo.ListFollowUps(ctx, solutionID, limit, offset)
+	if err != nil {
+		return nil, fmt.Errorf("doubt_service_list_follow_ups: %w", err)
+	}
+	return followUps, nil
 }
 
 // ── Chat ────────────────────────────────────
@@ -186,17 +219,25 @@ func (s *DoubtService) CreateRoom(ctx context.Context, questionID, studentID, me
 		Status:     "active",
 	}
 	if err := s.repo.CreateRoom(ctx, room); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("doubt_service_create_room: %w", err)
 	}
 	return room, nil
 }
 
 func (s *DoubtService) GetRoom(ctx context.Context, id uint) (*repository.ChatRoom, error) {
-	return s.repo.FindRoomByID(ctx, id)
+	room, err := s.repo.FindRoomByID(ctx, id)
+	if err != nil {
+		return nil, fmt.Errorf("doubt_service_get_room: %w", err)
+	}
+	return room, nil
 }
 
 func (s *DoubtService) GetHistory(ctx context.Context, roomID uint, limit, offset int) ([]repository.Message, error) {
-	return s.repo.GetHistory(ctx, roomID, limit, offset)
+	messages, err := s.repo.GetHistory(ctx, roomID, limit, offset)
+	if err != nil {
+		return nil, fmt.Errorf("doubt_service_get_history: %w", err)
+	}
+	return messages, nil
 }
 
 func (s *DoubtService) SendMessage(ctx context.Context, roomID, senderID uint, content, msgType, imageURL string) (*repository.Message, error) {
@@ -214,7 +255,7 @@ func (s *DoubtService) SendMessage(ctx context.Context, roomID, senderID uint, c
 		ImageURL: imageURL,
 	}
 	if err := s.repo.CreateMessage(ctx, msg); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("doubt_service_send_message: %w", err)
 	}
 
 	s.mu.RLock()
@@ -252,7 +293,11 @@ func (s *DoubtService) Unsubscribe(roomID uint, ch <-chan *repository.Message) {
 }
 
 func (s *DoubtService) MarkChatRead(ctx context.Context, roomID, userID uint) (int64, error) {
-	return s.repo.MarkRead(ctx, roomID, userID)
+	count, err := s.repo.MarkRead(ctx, roomID, userID)
+	if err != nil {
+		return 0, fmt.Errorf("doubt_service_mark_chat_read: %w", err)
+	}
+	return count, nil
 }
 
 // ── Notification ────────────────────────────
@@ -270,17 +315,24 @@ func (s *DoubtService) SendNotification(ctx context.Context, userID uint, nType,
 		Read:     false,
 	}
 	if err := s.repo.CreateNotification(ctx, n); err != nil {
-		return 0, err
+		return 0, fmt.Errorf("doubt_service_send_notification: %w", err)
 	}
 	return n.ID, nil
 }
 
 func (s *DoubtService) ListNotifications(ctx context.Context, userID uint, limit, offset int) ([]repository.NotificationRecord, error) {
-	return s.repo.ListNotifications(ctx, userID, limit, offset)
+	notifications, err := s.repo.ListNotifications(ctx, userID, limit, offset)
+	if err != nil {
+		return nil, fmt.Errorf("doubt_service_list_notifications: %w", err)
+	}
+	return notifications, nil
 }
 
 func (s *DoubtService) MarkNotificationRead(ctx context.Context, userID, notificationID uint) error {
-	return s.repo.MarkNotificationRead(ctx, userID, notificationID)
+	if err := s.repo.MarkNotificationRead(ctx, userID, notificationID); err != nil {
+		return fmt.Errorf("doubt_service_mark_notification_read: %w", err)
+	}
+	return nil
 }
 
 func (s *DoubtService) GetPreferences(ctx context.Context, userID uint) (*repository.NotificationPreference, error) {
@@ -306,7 +358,7 @@ func (s *DoubtService) UpdatePreferences(ctx context.Context, userID uint, inApp
 	p.SMSEnabled = sms
 	p.DigestMode = digest
 	if err := s.repo.UpsertPreferences(ctx, p); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("doubt_service_update_preferences: %w", err)
 	}
 	return p, nil
 }

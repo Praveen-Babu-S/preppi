@@ -3,7 +3,7 @@ package handler
 import (
 	"strconv"
 
-	pb "preppi.com/proto/auth/v1"
+	pb "preppi.com/proto/auth"
 )
 
 func fmtUint(id uint64) string {

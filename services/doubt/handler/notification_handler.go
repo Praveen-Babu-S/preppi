@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 
+	"github.com/rs/zerolog/log"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -34,8 +35,10 @@ func (h *NotificationHandler) SendNotification(ctx context.Context, req *pb.Send
 	id, err := h.svc.SendNotification(ctx, userID, typeToString(req.GetType()), req.GetTitle(), req.GetBody(), channels)
 	if err != nil {
 		if errors.Is(err, service.ErrValidation) {
+			log.Warn().Err(err).Uint("user_id", userID).Msg("invalid notification payload")
 			return nil, status.Error(codes.InvalidArgument, "title and body are required")
 		}
+		log.Error().Err(err).Uint("user_id", userID).Msg("failed to send notification")
 		return nil, status.Error(codes.Internal, "failed to send notification")
 	}
 	return &pb.SendNotificationResponse{NotificationId: uintToStr(id)}, nil
@@ -52,6 +55,7 @@ func (h *NotificationHandler) ListNotifications(ctx context.Context, req *pb.Lis
 	}
 	notifications, err := h.svc.ListNotifications(ctx, userID, limit, 0)
 	if err != nil {
+		log.Error().Err(err).Uint("user_id", userID).Msg("failed to list notifications")
 		return nil, status.Error(codes.Internal, "failed to list notifications")
 	}
 	resp := &pb.ListNotificationsResponse{}
@@ -71,6 +75,7 @@ func (h *NotificationHandler) NotificationMarkRead(ctx context.Context, req *pb.
 		return nil, status.Error(codes.InvalidArgument, "invalid notification_id")
 	}
 	if err := h.svc.MarkNotificationRead(ctx, userID, notificationID); err != nil {
+		log.Error().Err(err).Uint("notification_id", notificationID).Uint("user_id", userID).Msg("failed to mark read")
 		return nil, status.Error(codes.Internal, "failed to mark read")
 	}
 	return &pb.NotificationMarkReadResponse{Success: true}, nil
@@ -83,6 +88,7 @@ func (h *NotificationHandler) GetPreferences(ctx context.Context, req *pb.GetPre
 	}
 	p, err := h.svc.GetPreferences(ctx, userID)
 	if err != nil {
+		log.Error().Err(err).Uint("user_id", userID).Msg("failed to get preferences")
 		return nil, status.Error(codes.Internal, "failed to get preferences")
 	}
 	return &pb.GetPreferencesResponse{Preferences: prefsToPB(p)}, nil
@@ -96,6 +102,7 @@ func (h *NotificationHandler) UpdatePreferences(ctx context.Context, req *pb.Upd
 	prefs := req.GetPreferences()
 	p, err := h.svc.UpdatePreferences(ctx, userID, prefs.GetInAppEnabled(), prefs.GetPushEnabled(), prefs.GetEmailEnabled(), prefs.GetSmsEnabled(), prefs.GetDigestMode())
 	if err != nil {
+		log.Error().Err(err).Uint("user_id", userID).Msg("failed to update preferences")
 		return nil, status.Error(codes.Internal, "failed to update preferences")
 	}
 	return &pb.UpdatePreferencesResponse{Preferences: prefsToPB(p)}, nil

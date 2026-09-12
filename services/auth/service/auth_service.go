@@ -34,7 +34,7 @@ func (s *AuthService) Register(ctx context.Context, name, email, password, role,
 
 	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
-		return 0, "", fmt.Errorf("auth_service_hash_password: %w", err)
+		return 0, "", err
 	}
 
 	u := &repository.User{

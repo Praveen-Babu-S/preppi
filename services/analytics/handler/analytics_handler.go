@@ -4,6 +4,7 @@ import (
 	"context"
 	"strconv"
 
+	"github.com/rs/zerolog/log"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
@@ -27,6 +28,7 @@ func (h *AnalyticsHandler) GetLeaderboard(ctx context.Context, req *pb.GetLeader
 	}
 	entries, err := h.svc.GetLeaderboard(ctx, req.GetPeriod(), limit)
 	if err != nil {
+		log.Error().Err(err).Str("period", req.GetPeriod()).Msg("failed to get leaderboard")
 		return nil, status.Error(codes.Internal, "failed to get leaderboard")
 	}
 	resp := &pb.GetLeaderboardResponse{}
@@ -48,6 +50,7 @@ func (h *AnalyticsHandler) GetStudentStats(ctx context.Context, req *pb.GetStude
 	}
 	stat, err := h.svc.GetStudentStats(ctx, studentID, req.GetPeriod())
 	if err != nil {
+		log.Error().Err(err).Uint("student_id", studentID).Str("period", req.GetPeriod()).Msg("failed to get student stats")
 		return nil, status.Error(codes.Internal, "failed to get student stats")
 	}
 	resp := &pb.GetStudentStatsResponse{
@@ -67,6 +70,7 @@ func (h *AnalyticsHandler) GetMentorStats(ctx context.Context, req *pb.GetMentor
 	}
 	stat, err := h.svc.GetMentorStats(ctx, mentorID, req.GetPeriod())
 	if err != nil {
+		log.Error().Err(err).Uint("mentor_id", mentorID).Str("period", req.GetPeriod()).Msg("failed to get mentor stats")
 		return nil, status.Error(codes.Internal, "failed to get mentor stats")
 	}
 	return &pb.GetMentorStatsResponse{
@@ -79,6 +83,7 @@ func (h *AnalyticsHandler) GetMentorStats(ctx context.Context, req *pb.GetMentor
 func (h *AnalyticsHandler) GetPlatformMetrics(ctx context.Context, req *pb.GetPlatformMetricsRequest) (*pb.GetPlatformMetricsResponse, error) {
 	m, err := h.svc.GetPlatformMetrics(ctx, req.GetPeriod())
 	if err != nil {
+		log.Error().Err(err).Str("period", req.GetPeriod()).Msg("failed to get platform metrics")
 		return nil, status.Error(codes.Internal, "failed to get platform metrics")
 	}
 	return &pb.GetPlatformMetricsResponse{

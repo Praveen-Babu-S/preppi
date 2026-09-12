@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 
+	"github.com/rs/zerolog/log"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -34,8 +35,10 @@ func (h *SolutionHandler) CreateSolution(ctx context.Context, req *pb.CreateSolu
 	sol, err := h.svc.CreateSolution(ctx, questionID, mentorID, req.GetDescription(), req.GetImageUrls())
 	if err != nil {
 		if errors.Is(err, service.ErrValidation) {
+			log.Warn().Err(err).Uint("question_id", questionID).Uint("mentor_id", mentorID).Msg("invalid solution payload")
 			return nil, status.Error(codes.InvalidArgument, "description is required")
 		}
+		log.Error().Err(err).Uint("question_id", questionID).Uint("mentor_id", mentorID).Msg("failed to create solution")
 		return nil, status.Error(codes.Internal, "failed to create solution")
 	}
 	return &pb.CreateSolutionResponse{Solution: toSolutionPB(sol)}, nil
@@ -48,6 +51,7 @@ func (h *SolutionHandler) GetSolutionById(ctx context.Context, req *pb.GetSoluti
 	}
 	sol, err := h.svc.GetSolution(ctx, id)
 	if err != nil {
+		log.Error().Err(err).Uint("id", id).Msg("solution not found")
 		return nil, status.Error(codes.NotFound, "solution not found")
 	}
 	return &pb.GetSolutionByIdResponse{Solution: toSolutionPB(sol)}, nil
@@ -64,6 +68,7 @@ func (h *SolutionHandler) ListSolutionsByQuestion(ctx context.Context, req *pb.L
 	}
 	solutions, err := h.svc.ListSolutionsByQuestion(ctx, questionID, limit, 0)
 	if err != nil {
+		log.Error().Err(err).Uint("question_id", questionID).Msg("failed to list solutions")
 		return nil, status.Error(codes.Internal, "failed to list solutions")
 	}
 	resp := &pb.ListSolutionsByQuestionResponse{}
@@ -82,8 +87,10 @@ func (h *SolutionHandler) VoteSolution(ctx context.Context, req *pb.VoteSolution
 	upvotes, downvotes, err := h.svc.Vote(ctx, id, isUpvote)
 	if err != nil {
 		if errors.Is(err, service.ErrSolutionNotFound) {
+			log.Info().Uint("id", id).Msg("solution not found for vote")
 			return nil, status.Error(codes.NotFound, "solution not found")
 		}
+		log.Error().Err(err).Uint("id", id).Msg("failed to vote")
 		return nil, status.Error(codes.Internal, "failed to vote")
 	}
 	return &pb.VoteSolutionResponse{Upvotes: int32(upvotes), Downvotes: int32(downvotes)}, nil
@@ -97,8 +104,10 @@ func (h *SolutionHandler) AcceptSolution(ctx context.Context, req *pb.AcceptSolu
 	accepted, err := h.svc.Accept(ctx, id)
 	if err != nil {
 		if errors.Is(err, service.ErrSolutionNotFound) {
+			log.Info().Uint("id", id).Msg("solution not found for accept")
 			return nil, status.Error(codes.NotFound, "solution not found")
 		}
+		log.Error().Err(err).Uint("id", id).Msg("failed to accept solution")
 		return nil, status.Error(codes.Internal, "failed to accept solution")
 	}
 	return &pb.AcceptSolutionResponse{Accepted: accepted}, nil
@@ -116,8 +125,10 @@ func (h *SolutionHandler) CreateFollowUp(ctx context.Context, req *pb.CreateFoll
 	fu, err := h.svc.CreateFollowUp(ctx, solutionID, userID, req.GetMessage(), req.GetImageUrls())
 	if err != nil {
 		if errors.Is(err, service.ErrValidation) {
+			log.Warn().Err(err).Uint("solution_id", solutionID).Msg("invalid follow-up payload")
 			return nil, status.Error(codes.InvalidArgument, "message is required")
 		}
+		log.Error().Err(err).Uint("solution_id", solutionID).Uint("user_id", userID).Msg("failed to create follow-up")
 		return nil, status.Error(codes.Internal, "failed to create follow-up")
 	}
 	return &pb.CreateFollowUpResponse{FollowUp: followUpToPB(fu)}, nil
@@ -134,6 +145,7 @@ func (h *SolutionHandler) ListFollowUps(ctx context.Context, req *pb.ListFollowU
 	}
 	followUps, err := h.svc.ListFollowUps(ctx, solutionID, limit, 0)
 	if err != nil {
+		log.Error().Err(err).Uint("solution_id", solutionID).Msg("failed to list follow-ups")
 		return nil, status.Error(codes.Internal, "failed to list follow-ups")
 	}
 	resp := &pb.ListFollowUpsResponse{}

@@ -2,9 +2,9 @@ package repository
 
 import (
 	"context"
-	"fmt"
 	"strings"
 
+	"github.com/rs/zerolog/log"
 	"gorm.io/gorm"
 )
 
@@ -155,13 +155,22 @@ func New(db *gorm.DB) Repository {
 // ── Question ────────────────────────────────
 
 func (r *repository) CreateQuestion(ctx context.Context, q *Question) error {
-	return fmt.Errorf("doubt_repo_create_question: %w", r.db.WithContext(ctx).Create(q).Error)
+	err := r.db.WithContext(ctx).Create(q).Error
+	if err != nil {
+		log.Error().Err(err).Uint("student_id", q.StudentID).Msg("unable to create question")
+	}
+	return err
 }
 
 func (r *repository) FindQuestionByID(ctx context.Context, id uint) (*Question, error) {
 	var q Question
 	if err := r.db.WithContext(ctx).First(&q, id).Error; err != nil {
-		return nil, fmt.Errorf("doubt_repo_find_question: %w", err)
+		if err == gorm.ErrRecordNotFound {
+			log.Info().Uint("id", id).Msg("question not found")
+		} else {
+			log.Error().Err(err).Uint("id", id).Msg("unable to find question")
+		}
+		return nil, err
 	}
 	return &q, nil
 }
@@ -183,14 +192,18 @@ func (r *repository) ListQuestions(ctx context.Context, f Filter) ([]Question, e
 
 	var questions []Question
 	if err := q.Order("created_at DESC").Find(&questions).Error; err != nil {
-		return nil, fmt.Errorf("doubt_repo_list_questions: %w", err)
+		log.Error().Err(err).Uint("student_id", f.StudentID).Str("status", f.Status).Msg("unable to list questions")
+		return nil, err
 	}
 	return questions, nil
 }
 
 func (r *repository) UpdateQuestionFields(ctx context.Context, id uint, fields map[string]any) error {
-	return fmt.Errorf("doubt_repo_update_question: %w",
-		r.db.WithContext(ctx).Model(&Question{}).Where("id = ?", id).Updates(fields).Error)
+	err := r.db.WithContext(ctx).Model(&Question{}).Where("id = ?", id).Updates(fields).Error
+	if err != nil {
+		log.Error().Err(err).Uint("id", id).Msg("unable to update question")
+	}
+	return err
 }
 
 func (r *repository) SearchQuestions(ctx context.Context, query, subject string, limit, offset int) ([]Question, error) {
@@ -211,7 +224,8 @@ func (r *repository) SearchQuestions(ctx context.Context, query, subject string,
 
 	var questions []Question
 	if err := q.Order("created_at DESC").Limit(limit).Offset(offset).Find(&questions).Error; err != nil {
-		return nil, fmt.Errorf("doubt_repo_search_questions: %w", err)
+		log.Error().Err(err).Str("query", query).Str("subject", subject).Msg("unable to search questions")
+		return nil, err
 	}
 	return questions, nil
 }
@@ -219,13 +233,22 @@ func (r *repository) SearchQuestions(ctx context.Context, query, subject string,
 // ── Solution ────────────────────────────────
 
 func (r *repository) CreateSolution(ctx context.Context, s *Solution) error {
-	return fmt.Errorf("doubt_repo_create_solution: %w", r.db.WithContext(ctx).Create(s).Error)
+	err := r.db.WithContext(ctx).Create(s).Error
+	if err != nil {
+		log.Error().Err(err).Uint("question_id", s.QuestionID).Uint("mentor_id", s.MentorID).Msg("unable to create solution")
+	}
+	return err
 }
 
 func (r *repository) FindSolutionByID(ctx context.Context, id uint) (*Solution, error) {
 	var s Solution
 	if err := r.db.WithContext(ctx).First(&s, id).Error; err != nil {
-		return nil, fmt.Errorf("doubt_repo_find_solution: %w", err)
+		if err == gorm.ErrRecordNotFound {
+			log.Info().Uint("id", id).Msg("solution not found")
+		} else {
+			log.Error().Err(err).Uint("id", id).Msg("unable to find solution")
+		}
+		return nil, err
 	}
 	return &s, nil
 }
@@ -238,32 +261,46 @@ func (r *repository) ListSolutionsByQuestion(ctx context.Context, questionID uin
 		Limit(limit).Offset(offset).
 		Find(&solutions).Error
 	if err != nil {
-		return nil, fmt.Errorf("doubt_repo_list_solutions: %w", err)
+		log.Error().Err(err).Uint("question_id", questionID).Msg("unable to list solutions")
+		return nil, err
 	}
 	return solutions, nil
 }
 
 func (r *repository) UpdateSolutionVotes(ctx context.Context, id uint, upvotes, downvotes int) error {
-	return fmt.Errorf("doubt_repo_update_votes: %w",
-		r.db.WithContext(ctx).Model(&Solution{}).Where("id = ?", id).
-			Updates(map[string]any{"upvotes": upvotes, "downvotes": downvotes}).Error)
+	err := r.db.WithContext(ctx).Model(&Solution{}).Where("id = ?", id).
+		Updates(map[string]any{"upvotes": upvotes, "downvotes": downvotes}).Error
+	if err != nil {
+		log.Error().Err(err).Uint("id", id).Msg("unable to update solution votes")
+	}
+	return err
 }
 
 func (r *repository) AcceptSolution(ctx context.Context, id uint) error {
-	return fmt.Errorf("doubt_repo_accept_solution: %w",
-		r.db.WithContext(ctx).Model(&Solution{}).Where("id = ?", id).
-			Update("is_accepted", true).Error)
+	err := r.db.WithContext(ctx).Model(&Solution{}).Where("id = ?", id).
+		Update("is_accepted", true).Error
+	if err != nil {
+		log.Error().Err(err).Uint("id", id).Msg("unable to accept solution")
+	}
+	return err
 }
 
 func (r *repository) UnacceptOtherSolutions(ctx context.Context, questionID uint) error {
-	return fmt.Errorf("doubt_repo_unaccept_others: %w",
-		r.db.WithContext(ctx).Model(&Solution{}).
-			Where("question_id = ? AND is_accepted = ?", questionID, true).
-			Update("is_accepted", false).Error)
+	err := r.db.WithContext(ctx).Model(&Solution{}).
+		Where("question_id = ? AND is_accepted = ?", questionID, true).
+		Update("is_accepted", false).Error
+	if err != nil {
+		log.Error().Err(err).Uint("question_id", questionID).Msg("unable to unaccept other solutions")
+	}
+	return err
 }
 
 func (r *repository) CreateFollowUp(ctx context.Context, f *FollowUp) error {
-	return fmt.Errorf("doubt_repo_create_follow_up: %w", r.db.WithContext(ctx).Create(f).Error)
+	err := r.db.WithContext(ctx).Create(f).Error
+	if err != nil {
+		log.Error().Err(err).Uint("solution_id", f.SolutionID).Msg("unable to create follow-up")
+	}
+	return err
 }
 
 func (r *repository) ListFollowUps(ctx context.Context, solutionID uint, limit, offset int) ([]FollowUp, error) {
@@ -274,7 +311,8 @@ func (r *repository) ListFollowUps(ctx context.Context, solutionID uint, limit, 
 		Limit(limit).Offset(offset).
 		Find(&followUps).Error
 	if err != nil {
-		return nil, fmt.Errorf("doubt_repo_list_follow_ups: %w", err)
+		log.Error().Err(err).Uint("solution_id", solutionID).Msg("unable to list follow-ups")
+		return nil, err
 	}
 	return followUps, nil
 }
@@ -282,13 +320,22 @@ func (r *repository) ListFollowUps(ctx context.Context, solutionID uint, limit, 
 // ── Chat ────────────────────────────────────
 
 func (r *repository) CreateRoom(ctx context.Context, room *ChatRoom) error {
-	return fmt.Errorf("doubt_repo_create_room: %w", r.db.WithContext(ctx).Create(room).Error)
+	err := r.db.WithContext(ctx).Create(room).Error
+	if err != nil {
+		log.Error().Err(err).Uint("question_id", room.QuestionID).Msg("unable to create chat room")
+	}
+	return err
 }
 
 func (r *repository) FindRoomByID(ctx context.Context, id uint) (*ChatRoom, error) {
 	var room ChatRoom
 	if err := r.db.WithContext(ctx).First(&room, id).Error; err != nil {
-		return nil, fmt.Errorf("doubt_repo_find_room: %w", err)
+		if err == gorm.ErrRecordNotFound {
+			log.Info().Uint("id", id).Msg("chat room not found")
+		} else {
+			log.Error().Err(err).Uint("id", id).Msg("unable to find chat room")
+		}
+		return nil, err
 	}
 	return &room, nil
 }
@@ -296,13 +343,22 @@ func (r *repository) FindRoomByID(ctx context.Context, id uint) (*ChatRoom, erro
 func (r *repository) FindRoomByQuestionID(ctx context.Context, questionID uint) (*ChatRoom, error) {
 	var room ChatRoom
 	if err := r.db.WithContext(ctx).Where("question_id = ?", questionID).First(&room).Error; err != nil {
-		return nil, fmt.Errorf("doubt_repo_find_room_by_question: %w", err)
+		if err == gorm.ErrRecordNotFound {
+			log.Info().Uint("question_id", questionID).Msg("chat room not found for question")
+		} else {
+			log.Error().Err(err).Uint("question_id", questionID).Msg("unable to find chat room by question")
+		}
+		return nil, err
 	}
 	return &room, nil
 }
 
 func (r *repository) CreateMessage(ctx context.Context, m *Message) error {
-	return fmt.Errorf("doubt_repo_create_message: %w", r.db.WithContext(ctx).Create(m).Error)
+	err := r.db.WithContext(ctx).Create(m).Error
+	if err != nil {
+		log.Error().Err(err).Uint("room_id", m.RoomID).Uint("sender_id", m.SenderID).Msg("unable to create message")
+	}
+	return err
 }
 
 func (r *repository) GetHistory(ctx context.Context, roomID uint, limit, offset int) ([]Message, error) {
@@ -313,7 +369,8 @@ func (r *repository) GetHistory(ctx context.Context, roomID uint, limit, offset 
 		Limit(limit).Offset(offset).
 		Find(&messages).Error
 	if err != nil {
-		return nil, fmt.Errorf("doubt_repo_get_history: %w", err)
+		log.Error().Err(err).Uint("room_id", roomID).Msg("unable to get chat history")
+		return nil, err
 	}
 	return messages, nil
 }
@@ -323,7 +380,8 @@ func (r *repository) MarkRead(ctx context.Context, roomID, userID uint) (int64, 
 		Where("room_id = ? AND sender_id != ? AND read = ?", roomID, userID, false).
 		Update("read", true)
 	if result.Error != nil {
-		return 0, fmt.Errorf("doubt_repo_mark_read: %w", result.Error)
+		log.Error().Err(result.Error).Uint("room_id", roomID).Uint("user_id", userID).Msg("unable to mark chat read")
+		return 0, result.Error
 	}
 	return result.RowsAffected, nil
 }
@@ -331,7 +389,11 @@ func (r *repository) MarkRead(ctx context.Context, roomID, userID uint) (int64, 
 // ── Notification ────────────────────────────
 
 func (r *repository) CreateNotification(ctx context.Context, n *NotificationRecord) error {
-	return fmt.Errorf("doubt_repo_create_notification: %w", r.db.WithContext(ctx).Create(n).Error)
+	err := r.db.WithContext(ctx).Create(n).Error
+	if err != nil {
+		log.Error().Err(err).Uint("user_id", n.UserID).Msg("unable to create notification")
+	}
+	return err
 }
 
 func (r *repository) ListNotifications(ctx context.Context, userID uint, limit, offset int) ([]NotificationRecord, error) {
@@ -342,26 +404,39 @@ func (r *repository) ListNotifications(ctx context.Context, userID uint, limit, 
 		Limit(limit).Offset(offset).
 		Find(&notifications).Error
 	if err != nil {
-		return nil, fmt.Errorf("doubt_repo_list_notifications: %w", err)
+		log.Error().Err(err).Uint("user_id", userID).Msg("unable to list notifications")
+		return nil, err
 	}
 	return notifications, nil
 }
 
 func (r *repository) MarkNotificationRead(ctx context.Context, userID uint, notificationID uint) error {
-	return fmt.Errorf("doubt_repo_mark_notification_read: %w",
-		r.db.WithContext(ctx).Model(&NotificationRecord{}).
-			Where("id = ? AND user_id = ?", notificationID, userID).
-			Update("read", true).Error)
+	err := r.db.WithContext(ctx).Model(&NotificationRecord{}).
+		Where("id = ? AND user_id = ?", notificationID, userID).
+		Update("read", true).Error
+	if err != nil {
+		log.Error().Err(err).Uint("notification_id", notificationID).Uint("user_id", userID).Msg("unable to mark notification read")
+	}
+	return err
 }
 
 func (r *repository) GetPreferences(ctx context.Context, userID uint) (*NotificationPreference, error) {
 	var p NotificationPreference
 	if err := r.db.WithContext(ctx).Where("user_id = ?", userID).First(&p).Error; err != nil {
-		return nil, fmt.Errorf("doubt_repo_get_prefs: %w", err)
+		if err == gorm.ErrRecordNotFound {
+			log.Info().Uint("user_id", userID).Msg("notification preferences not found")
+		} else {
+			log.Error().Err(err).Uint("user_id", userID).Msg("unable to get notification preferences")
+		}
+		return nil, err
 	}
 	return &p, nil
 }
 
 func (r *repository) UpsertPreferences(ctx context.Context, p *NotificationPreference) error {
-	return fmt.Errorf("doubt_repo_upsert_prefs: %w", r.db.WithContext(ctx).Save(p).Error)
+	err := r.db.WithContext(ctx).Save(p).Error
+	if err != nil {
+		log.Error().Err(err).Uint("user_id", p.UserID).Msg("unable to upsert notification preferences")
+	}
+	return err
 }
