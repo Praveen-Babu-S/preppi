@@ -1,6 +1,5 @@
 # --- Secrets ---
 *.env
-!.env.example
 
 # --- Go build artifacts ---
 *.exe
